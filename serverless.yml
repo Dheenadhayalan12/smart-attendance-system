@@ -135,6 +135,56 @@ functions:
           method: post
           cors: true
 
+  # Student Management functions
+  registerStudent:
+    handler: backend/handlers/students.registerStudent
+    events:
+      - http:
+          path: students/register
+          method: post
+          cors: true
+
+  getStudentsByClass:
+    handler: backend/handlers/students.getStudentsByClass
+    events:
+      - http:
+          path: classes/{classId}/students
+          method: get
+          cors: true
+
+  getStudent:
+    handler: backend/handlers/students.getStudent
+    events:
+      - http:
+          path: students/{studentId}
+          method: get
+          cors: true
+
+  # Attendance functions
+  markAttendance:
+    handler: backend/handlers/attendance.markAttendance
+    events:
+      - http:
+          path: attendance/mark
+          method: post
+          cors: true
+
+  getSessionAttendance:
+    handler: backend/handlers/attendance.getSessionAttendance
+    events:
+      - http:
+          path: sessions/{sessionId}/attendance
+          method: get
+          cors: true
+
+  getStudentAttendance:
+    handler: backend/handlers/attendance.getStudentAttendance
+    events:
+      - http:
+          path: students/{studentId}/attendance
+          method: get
+          cors: true
+
 resources:
   Resources:
     # DynamoDB Tables

@@ -3,8 +3,13 @@ const {
   CreateTableCommand,
   ListTablesCommand,
 } = require("@aws-sdk/client-dynamodb");
+const {
+  S3Client,
+  CreateBucketCommand,
+  ListBucketsCommand,
+} = require("@aws-sdk/client-s3");
 
-// Configure DynamoDB client for LocalStack
+// Configure clients for LocalStack
 const dynamoClient = new DynamoDBClient({
   endpoint: "http://localhost:4566",
   region: "us-east-1",
@@ -12,6 +17,16 @@ const dynamoClient = new DynamoDBClient({
     accessKeyId: "test",
     secretAccessKey: "test",
   },
+});
+
+const s3Client = new S3Client({
+  endpoint: "http://localhost:4566",
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
+  forcePathStyle: true,
 });
 
 const tables = [
@@ -74,4 +89,42 @@ async function setupTables() {
   }
 }
 
-setupTables();
+async function setupS3Buckets() {
+  console.log("Setting up S3 buckets in LocalStack...");
+
+  try {
+    // Check existing buckets
+    const existingBuckets = await s3Client.send(new ListBucketsCommand({}));
+    const bucketNames = existingBuckets.Buckets?.map((b) => b.Name) || [];
+
+    const requiredBuckets = ["smart-attendance-faces"];
+
+    for (const bucketName of requiredBuckets) {
+      if (bucketNames.includes(bucketName)) {
+        console.log(`Bucket ${bucketName} already exists, skipping...`);
+        continue;
+      }
+
+      console.log(`Creating bucket: ${bucketName}`);
+      await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
+      console.log(`✓ Created bucket: ${bucketName}`);
+    }
+
+    console.log("All buckets setup complete!");
+  } catch (error) {
+    console.error("Error setting up buckets:", error);
+  }
+}
+
+async function setupLocalStack() {
+  console.log("🔧 Setting up LocalStack environment...\n");
+
+  await setupTables();
+  console.log("");
+  await setupS3Buckets();
+
+  console.log("\n✅ LocalStack setup complete!");
+  console.log("🚀 Ready for development and testing.");
+}
+
+setupLocalStack();
