@@ -61,9 +61,9 @@ functions:
           method: post
           cors: true
 
-  # Class management functions
+  # Class Management functions
   createClass:
-    handler: backend/handlers/classes.create
+    handler: backend/handlers/classes.createClass
     events:
       - http:
           path: classes
@@ -71,36 +71,67 @@ functions:
           cors: true
 
   getClasses:
-    handler: backend/handlers/classes.list
+    handler: backend/handlers/classes.getClasses
     events:
       - http:
           path: classes
           method: get
           cors: true
 
-  # QR code generation
-  generateQR:
-    handler: backend/handlers/qr.generate
+  getClass:
+    handler: backend/handlers/classes.getClass
     events:
       - http:
-          path: qr/generate
+          path: classes/{classId}
+          method: get
+          cors: true
+
+  updateClass:
+    handler: backend/handlers/classes.updateClass
+    events:
+      - http:
+          path: classes/{classId}
+          method: put
+          cors: true
+
+  deleteClass:
+    handler: backend/handlers/classes.deleteClass
+    events:
+      - http:
+          path: classes/{classId}
+          method: delete
+          cors: true
+
+  # Session Management functions
+  createSession:
+    handler: backend/handlers/sessions.createSession
+    events:
+      - http:
+          path: sessions
           method: post
           cors: true
 
-  # Face recognition functions
-  registerFace:
-    handler: backend/handlers/face.register
+  getSessionsByClass:
+    handler: backend/handlers/sessions.getSessionsByClass
     events:
       - http:
-          path: face/register
-          method: post
+          path: classes/{classId}/sessions
+          method: get
           cors: true
 
-  verifyFace:
-    handler: backend/handlers/face.verify
+  getSession:
+    handler: backend/handlers/sessions.getSession
     events:
       - http:
-          path: face/verify
+          path: sessions/{sessionId}
+          method: get
+          cors: true
+
+  endSession:
+    handler: backend/handlers/sessions.endSession
+    events:
+      - http:
+          path: sessions/{sessionId}/end
           method: post
           cors: true
 
@@ -110,98 +141,82 @@ resources:
     TeachersTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:provider.environment.DYNAMODB_TABLE_PREFIX}-teachers
+        TableName: Teachers
         AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: email
+          - AttributeName: teacherId
             AttributeType: S
         KeySchema:
-          - AttributeName: id
+          - AttributeName: teacherId
             KeyType: HASH
-        GlobalSecondaryIndexes:
-          - IndexName: email-index
-            KeySchema:
-              - AttributeName: email
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
-            BillingMode: PAY_PER_REQUEST
-        BillingMode: PAY_PER_REQUEST
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
 
     ClassesTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:provider.environment.DYNAMODB_TABLE_PREFIX}-classes
+        TableName: Classes
         AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: teacherId
+          - AttributeName: classId
             AttributeType: S
         KeySchema:
-          - AttributeName: id
+          - AttributeName: classId
             KeyType: HASH
-        GlobalSecondaryIndexes:
-          - IndexName: teacher-index
-            KeySchema:
-              - AttributeName: teacherId
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
-            BillingMode: PAY_PER_REQUEST
-        BillingMode: PAY_PER_REQUEST
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+    SessionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Sessions
+        AttributeDefinitions:
+          - AttributeName: sessionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: sessionId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
 
     StudentsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:provider.environment.DYNAMODB_TABLE_PREFIX}-students
+        TableName: Students
         AttributeDefinitions:
-          - AttributeName: rollNumber
-            AttributeType: S
-          - AttributeName: classId
+          - AttributeName: studentId
             AttributeType: S
         KeySchema:
-          - AttributeName: rollNumber
+          - AttributeName: studentId
             KeyType: HASH
-        GlobalSecondaryIndexes:
-          - IndexName: class-index
-            KeySchema:
-              - AttributeName: classId
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
-            BillingMode: PAY_PER_REQUEST
-        BillingMode: PAY_PER_REQUEST
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
 
     AttendanceTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:provider.environment.DYNAMODB_TABLE_PREFIX}-attendance
+        TableName: Attendance
         AttributeDefinitions:
-          - AttributeName: sessionId
-            AttributeType: S
-          - AttributeName: rollNumber
+          - AttributeName: attendanceId
             AttributeType: S
         KeySchema:
-          - AttributeName: sessionId
+          - AttributeName: attendanceId
             KeyType: HASH
-          - AttributeName: rollNumber
-            KeyType: RANGE
-        BillingMode: PAY_PER_REQUEST
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
 
-    # S3 Bucket for storing face images
-    StorageBucket:
+    # S3 Bucket for face images
+    FaceImagesBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:provider.environment.S3_BUCKET}
-        CorsConfiguration:
-          CorsRules:
-            - AllowedHeaders:
-                - "*"
-              AllowedMethods:
-                - GET
-                - PUT
-                - POST
-                - DELETE
-              AllowedOrigins:
-                - "*"
+        BucketName: smart-attendance-faces
+        VersioningConfiguration:
+          Status: Enabled
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
