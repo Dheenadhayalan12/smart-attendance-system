@@ -554,3 +554,172 @@ module.exports.getTeacherStatistics = async (event) => {
     };
   }
 };
+
+// Get analytics for a specific class
+module.exports.getClassAnalytics = async (event) => {
+  try {
+    // Verify authentication
+    const token = event.headers.Authorization || event.headers.authorization;
+    if (!token) {
+      return {
+        statusCode: 401,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ success: false, message: "No token provided" }),
+      };
+    }
+
+    const decoded = verifyToken(token);
+    const classId = event.pathParameters.classId;
+
+    // Get class details
+    const classResult = await dynamodb.send(
+      new GetCommand({
+        TableName: "Classes",
+        Key: { classId },
+      })
+    );
+
+    const classData = classResult.Item;
+    if (!classData) {
+      return {
+        statusCode: 404,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ success: false, message: "Class not found" }),
+      };
+    }
+
+    // Verify teacher owns this class
+    if (classData.teacherId !== decoded.teacherId) {
+      return {
+        statusCode: 403,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ success: false, message: "Access denied" }),
+      };
+    }
+
+    // Get all sessions for this class
+    const sessionsResult = await dynamodb.send(
+      new ScanCommand({
+        TableName: "Sessions",
+        FilterExpression: "classId = :classId",
+        ExpressionAttributeValues: {
+          ":classId": classId,
+        },
+      })
+    );
+
+    const sessions = sessionsResult.Items || [];
+    const totalSessions = sessions.length;
+
+    // Calculate total students from class roll number range
+    let totalStudents = 0;
+    if (classData.rollNumberRange) {
+      const [from, to] = classData.rollNumberRange.split("-");
+      if (from && to) {
+        const fromNum = parseInt(from.replace(/\D/g, ""));
+        const toNum = parseInt(to.replace(/\D/g, ""));
+        if (!isNaN(fromNum) && !isNaN(toNum)) {
+          totalStudents = toNum - fromNum + 1;
+        }
+      }
+    }
+
+    // Calculate attendance statistics
+    let totalAttendanceRate = 0;
+    let sessionsWithAttendance = 0;
+    const attendanceTrend = [];
+
+    sessions.forEach((session) => {
+      if (session.attendanceCount !== undefined && session.expectedStudents) {
+        const rate = (session.attendanceCount / session.expectedStudents) * 100;
+        totalAttendanceRate += rate;
+        sessionsWithAttendance++;
+
+        // Add to trend data
+        attendanceTrend.push({
+          date: session.startTime,
+          percentage: Math.round(rate),
+          present: session.attendanceCount,
+          total: session.expectedStudents,
+        });
+      }
+    });
+
+    // Sort trend by date
+    attendanceTrend.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const averageAttendance =
+      sessionsWithAttendance > 0
+        ? Math.round((totalAttendanceRate / sessionsWithAttendance) * 10) / 10
+        : 0;
+
+    // Calculate trend (comparing last few sessions)
+    let trend = "neutral";
+    let trendPercentage = 0;
+    if (attendanceTrend.length >= 2) {
+      const recent = attendanceTrend.slice(-3); // Last 3 sessions
+      const earlier = attendanceTrend.slice(-6, -3); // Previous 3 sessions
+
+      if (recent.length > 0 && earlier.length > 0) {
+        const recentAvg =
+          recent.reduce((sum, item) => sum + item.percentage, 0) /
+          recent.length;
+        const earlierAvg =
+          earlier.reduce((sum, item) => sum + item.percentage, 0) /
+          earlier.length;
+        const diff = recentAvg - earlierAvg;
+
+        if (Math.abs(diff) > 2) {
+          // Only consider significant changes
+          trend = diff > 0 ? "up" : "down";
+          trendPercentage = Math.round(Math.abs(diff) * 10) / 10;
+        }
+      }
+    }
+
+    // Get session details for reports
+    const sessionDetails = sessions.map((session) => ({
+      sessionId: session.sessionId,
+      sessionName: session.sessionName,
+      date: session.startTime,
+      status: session.isActive ? "active" : "completed",
+      attendanceCount: session.attendanceCount || 0,
+      expectedStudents: session.expectedStudents || 0,
+      attendanceRate: session.expectedStudents
+        ? Math.round((session.attendanceCount / session.expectedStudents) * 100)
+        : 0,
+    }));
+
+    const analytics = {
+      totalStudents,
+      totalSessions,
+      averageAttendance,
+      trend,
+      trendPercentage,
+      attendanceTrend: attendanceTrend.slice(-10), // Last 10 sessions for trend
+      sessionDetails: sessionDetails.sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      ),
+    };
+
+    return {
+      statusCode: 200,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({
+        success: true,
+        analytics,
+      }),
+    };
+  } catch (error) {
+    console.error("Get class analytics error:", error);
+    return {
+      statusCode: 500,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      }),
+    };
+  }
+};

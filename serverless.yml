@@ -112,6 +112,14 @@ functions:
           method: get
           cors: true
 
+  getClassAnalytics:
+    handler: backend/handlers/classes.getClassAnalytics
+    events:
+      - http:
+          path: classes/{classId}/attendance/analytics
+          method: get
+          cors: true
+
   # Session Management functions
   createSession:
     handler: backend/handlers/sessions.createSession
