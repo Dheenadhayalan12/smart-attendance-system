@@ -46,9 +46,9 @@ export const AuthProvider = ({ children }) => {
 
       // Backend returns: { success: true, data: { token, teacherId, name, email } }
       const { data } = response;
-      const { token, teacherId, name, email } = data;
+      const { token, teacherId, name, email: userEmail } = data;
 
-      const teacher = { teacherId, name, email };
+      const teacher = { teacherId, name, email: userEmail };
 
       // Store token and user data using authService
       authService.setToken(token);
