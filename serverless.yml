@@ -4,6 +4,7 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: us-east-1
+  stage: local
   environment:
     DYNAMODB_TABLE_PREFIX: ${self:service}-${opt:stage, self:provider.stage}
     S3_BUCKET: ${self:service}-${opt:stage, self:provider.stage}-storage
@@ -30,6 +31,7 @@ provider:
 
 plugins:
   - serverless-localstack
+  - serverless-offline
 
 custom:
   localstack:
@@ -162,7 +164,7 @@ functions:
 
   # Attendance functions
   markAttendance:
-    handler: backend/handlers/attendance.markAttendance
+    handler: backend/handlers/attendance-local.markAttendanceMobile
     events:
       - http:
           path: attendance/mark
