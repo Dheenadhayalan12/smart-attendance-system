@@ -11,7 +11,6 @@ import {
   XMarkIcon,
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
-  BellIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../context/AuthContext";
 
@@ -33,7 +32,10 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div
+      className="flex h-screen"
+      style={{ backgroundColor: "var(--color-primary-bg)" }}
+    >
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -59,7 +61,8 @@ const Layout = ({ children }) => {
             animate={{ x: 0 }}
             exit={{ x: -300 }}
             transition={{ type: "tween", duration: 0.3 }}
-            className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl lg:hidden"
+            className="fixed inset-y-0 left-0 z-50 w-64 shadow-xl lg:hidden"
+            style={{ backgroundColor: "var(--color-card-bg)" }}
           >
             <SidebarContent
               navigation={navigation}
@@ -87,40 +90,36 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top nav */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header
+          className="shadow-sm border-b"
+          style={{
+            backgroundColor: "var(--color-card-bg)",
+            borderColor: "var(--color-border)",
+          }}
+        >
           <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
               <button
                 type="button"
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors"
+                className="lg:hidden p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset transition-colors"
+                style={{ color: "var(--color-primary-text)" }}
                 onClick={() => setSidebarOpen(true)}
               >
                 <Bars3Icon className="h-6 w-6" />
               </button>
-              <h1 className="ml-3 lg:ml-0 text-2xl font-semibold text-gray-900">
+              <h1
+                className="ml-3 lg:ml-0 text-2xl font-semibold"
+                style={{
+                  color: "var(--color-primary-text)",
+                  fontFamily: "Poppins, sans-serif",
+                }}
+              >
                 {navigation.find((item) => isActivePath(item.href))?.name ||
                   "Smart Attendance"}
               </h1>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-400 hover:text-gray-500 transition-colors">
-                <BellIcon className="h-6 w-6" />
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user?.name}
-                  </p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
-                </div>
-              </div>
-            </div>
+            {/* Removed duplicate notification and profile section */}
           </div>
         </header>
 
@@ -149,16 +148,42 @@ const SidebarContent = ({
   onClose,
 }) => {
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
+    <div
+      className="flex flex-col h-full border-r"
+      style={{
+        backgroundColor: "var(--color-card-bg)",
+        borderColor: "var(--color-border)",
+      }}
+    >
       {/* Logo and close button */}
       <div className="flex items-center justify-between px-6 py-6">
         <div className="flex items-center">
-          <div className="h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div
+            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--color-success), var(--color-subtle-accent))",
+            }}
+          >
             <UserGroupIcon className="h-6 w-6 text-white" />
           </div>
           <div className="ml-3">
-            <span className="text-lg font-bold text-gray-900">Smart</span>
-            <span className="text-lg font-bold text-blue-600 ml-1">
+            <span
+              className="text-lg font-bold"
+              style={{
+                color: "var(--color-primary-text)",
+                fontFamily: "Poppins, sans-serif",
+              }}
+            >
+              Smart
+            </span>
+            <span
+              className="text-lg font-bold ml-1"
+              style={{
+                color: "var(--color-success)",
+                fontFamily: "Poppins, sans-serif",
+              }}
+            >
               Attendance
             </span>
           </div>
@@ -166,7 +191,8 @@ const SidebarContent = ({
         {onClose && (
           <button
             type="button"
-            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 transition-colors"
+            className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+            style={{ color: "var(--color-primary-text)" }}
             onClick={onClose}
           >
             <XMarkIcon className="h-6 w-6" />
@@ -189,17 +215,24 @@ const SidebarContent = ({
                 to={item.href}
                 onClick={onClose}
                 className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  isActive ? "text-white shadow-lg" : "hover:bg-gray-100"
                 }`}
+                style={
+                  isActive
+                    ? {
+                        background: `linear-gradient(135deg, var(--color-success), var(--color-subtle-accent))`,
+                        boxShadow: "0 10px 25px rgba(34, 139, 34, 0.25)",
+                      }
+                    : { color: "var(--color-primary-text)" }
+                }
               >
                 <item.icon
                   className={`mr-3 h-5 w-5 transition-colors ${
-                    isActive
-                      ? "text-white"
-                      : "text-gray-400 group-hover:text-gray-500"
+                    isActive ? "text-white" : "group-hover:opacity-70"
                   }`}
+                  style={
+                    !isActive ? { color: "var(--color-primary-text)" } : {}
+                  }
                 />
                 {item.name}
               </NavLink>
@@ -209,25 +242,54 @@ const SidebarContent = ({
       </nav>
 
       {/* User profile and logout */}
-      <div className="px-4 py-4 border-t border-gray-200">
-        <div className="flex items-center mb-4 px-4 py-3 bg-gray-50 rounded-xl">
-          <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+      <div
+        className="px-4 py-4 border-t"
+        style={{ borderColor: "var(--color-border)" }}
+      >
+        <div
+          className="flex items-center mb-4 px-4 py-3 rounded-xl"
+          style={{ backgroundColor: "var(--color-accent-light)" }}
+        >
+          <div
+            className="h-10 w-10 rounded-full flex items-center justify-center"
+            style={{
+              background: `linear-gradient(135deg, var(--color-success), var(--color-subtle-accent))`,
+            }}
+          >
             <span className="text-white text-sm font-bold">
               {user?.name?.charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="ml-3 flex-1">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p
+              className="text-sm font-medium truncate"
+              style={{
+                color: "var(--color-primary-text)",
+                fontFamily: "Poppins, sans-serif",
+              }}
+            >
               {user?.name}
             </p>
-            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+            <p
+              className="text-xs truncate"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
+              {user?.email}
+            </p>
           </div>
         </div>
         <button
           onClick={logout}
-          className="group flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 rounded-xl hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+          className="group flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl hover:bg-gray-100 transition-all duration-200"
+          style={{
+            color: "var(--color-alert)",
+            fontFamily: "Poppins, sans-serif",
+          }}
         >
-          <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+          <ArrowRightOnRectangleIcon
+            className="mr-3 h-5 w-5 group-hover:opacity-70"
+            style={{ color: "var(--color-alert)" }}
+          />
           Sign out
         </button>
       </div>

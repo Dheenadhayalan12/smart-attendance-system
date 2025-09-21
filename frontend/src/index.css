@@ -1,22 +1,45 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
-/* Custom scrollbar */
+/* CSS Custom Properties for New Color Theme */
+:root {
+  --color-primary-bg: #f5e7de; /* Primary Background: The main canvas */
+  --color-card-bg: #ffffff; /* Card/Element Background: White for cards */
+  --color-subtle-accent: #f2bfa4; /* Subtle Accent: Secondary buttons, tags */
+  --color-primary-text: #36454f; /* Primary Text & UI: Dark charcoal */
+  --color-success: #228b22; /* Success/Confirmation Color: Clear green */
+  --color-alert: #d22b2b; /* Alert/Action Color: Muted red */
+
+  /* Additional theme colors for better design */
+  --color-accent-light: #f8f3f0; /* Even lighter background for subtle sections */
+  --color-text-secondary: #6b7280; /* Secondary text color */
+  --color-border: #e5e7eb; /* Border color */
+  --color-hover: #f3f4f6; /* Hover states */
+}
+
+/* Base body styling with new theme */
+body {
+  font-family: "Poppins", "Inter", system-ui, -apple-system, sans-serif;
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary-text);
+}
+
+/* Custom scrollbar with theme colors */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-accent-light);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-subtle-accent);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-primary-text);
 }
 
 /* Smooth transitions for all elements */
