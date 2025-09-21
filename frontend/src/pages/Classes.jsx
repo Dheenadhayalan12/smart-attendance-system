@@ -6,10 +6,8 @@ import {
   TrashIcon,
   UserGroupIcon,
   CalendarIcon,
-  ClockIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 const Classes = () => {
@@ -18,14 +16,13 @@ const Classes = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
-  const { user } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
     subject: "",
-    schedule: "",
+    rollNumberFrom: "",
+    rollNumberTo: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -36,27 +33,27 @@ const Classes = () => {
       {
         id: 1,
         name: "Computer Science 101",
-        description: "Introduction to Computer Science",
         subject: "Computer Science",
-        schedule: "Mon, Wed, Fri - 9:00 AM",
+        rollNumberFrom: "2024279000",
+        rollNumberTo: "2024279030",
         studentCount: 25,
         createdAt: "2024-01-15",
       },
       {
         id: 2,
         name: "Data Structures",
-        description: "Advanced Data Structures and Algorithms",
         subject: "Computer Science",
-        schedule: "Tue, Thu - 2:00 PM",
+        rollNumberFrom: "2024279031",
+        rollNumberTo: "2024279060",
         studentCount: 18,
         createdAt: "2024-01-20",
       },
       {
         id: 3,
         name: "Web Development",
-        description: "Full Stack Web Development",
         subject: "Computer Science",
-        schedule: "Mon, Wed - 11:00 AM",
+        rollNumberFrom: "2024279061",
+        rollNumberTo: "2024279090",
         studentCount: 30,
         createdAt: "2024-02-01",
       },
@@ -93,8 +90,24 @@ const Classes = () => {
     if (!formData.subject.trim()) {
       newErrors.subject = "Subject is required";
     }
-    if (!formData.schedule.trim()) {
-      newErrors.schedule = "Schedule is required";
+    if (!formData.rollNumberFrom.trim()) {
+      newErrors.rollNumberFrom = "Starting roll number is required";
+    }
+    if (!formData.rollNumberTo.trim()) {
+      newErrors.rollNumberTo = "Ending roll number is required";
+    }
+
+    // Validate roll number format and range
+    if (formData.rollNumberFrom && formData.rollNumberTo) {
+      const fromNum = parseInt(formData.rollNumberFrom);
+      const toNum = parseInt(formData.rollNumberTo);
+
+      if (isNaN(fromNum) || isNaN(toNum)) {
+        newErrors.rollNumberFrom = "Roll numbers must be numeric";
+      } else if (fromNum >= toNum) {
+        newErrors.rollNumberTo =
+          "Ending roll number must be greater than starting roll number";
+      }
     }
 
     setErrors(newErrors);
@@ -140,9 +153,9 @@ const Classes = () => {
     setSelectedClass(classItem);
     setFormData({
       name: classItem.name,
-      description: classItem.description,
       subject: classItem.subject,
-      schedule: classItem.schedule,
+      rollNumberFrom: classItem.rollNumberFrom,
+      rollNumberTo: classItem.rollNumberTo,
     });
     setShowEditModal(true);
   };
@@ -157,9 +170,9 @@ const Classes = () => {
   const resetForm = () => {
     setFormData({
       name: "",
-      description: "",
       subject: "",
-      schedule: "",
+      rollNumberFrom: "",
+      rollNumberTo: "",
     });
     setErrors({});
     setSelectedClass(null);
@@ -252,11 +265,10 @@ const Classes = () => {
                     <p className="text-sm text-gray-600 mb-2">
                       {classItem.subject}
                     </p>
-                    {classItem.description && (
-                      <p className="text-sm text-gray-500 line-clamp-2">
-                        {classItem.description}
-                      </p>
-                    )}
+                    <p className="text-sm text-gray-500">
+                      Roll No: {classItem.rollNumberFrom} -{" "}
+                      {classItem.rollNumberTo}
+                    </p>
                   </div>
                   <div className="flex space-x-1 ml-2">
                     <button
@@ -276,10 +288,6 @@ const Classes = () => {
 
                 <div className="space-y-3">
                   <div className="flex items-center text-sm text-gray-600">
-                    <ClockIcon className="h-4 w-4 mr-2 text-gray-400" />
-                    {classItem.schedule}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
                     <UserGroupIcon className="h-4 w-4 mr-2 text-gray-400" />
                     {classItem.studentCount} students
                   </div>
@@ -290,12 +298,15 @@ const Classes = () => {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <div className="flex space-x-2">
-                    <button className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button className="px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
                       View Students
                     </button>
-                    <button className="flex-1 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors">
+                    <button className="px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors">
                       Start Session
+                    </button>
+                    <button className="col-span-2 px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">
+                      View Session History
                     </button>
                   </div>
                 </div>
@@ -374,39 +385,52 @@ const Classes = () => {
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Schedule *
-                    </label>
-                    <input
-                      type="text"
-                      name="schedule"
-                      value={formData.schedule}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.schedule ? "border-red-300" : "border-gray-300"
-                      }`}
-                      placeholder="e.g., Mon, Wed, Fri - 9:00 AM"
-                    />
-                    {errors.schedule && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.schedule}
-                      </p>
-                    )}
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Roll Number From *
+                      </label>
+                      <input
+                        type="text"
+                        name="rollNumberFrom"
+                        value={formData.rollNumberFrom}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          errors.rollNumberFrom
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                        placeholder="e.g., 2024279000"
+                      />
+                      {errors.rollNumberFrom && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors.rollNumberFrom}
+                        </p>
+                      )}
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
-                    </label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter class description (optional)"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Roll Number To *
+                      </label>
+                      <input
+                        type="text"
+                        name="rollNumberTo"
+                        value={formData.rollNumberTo}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          errors.rollNumberTo
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                        placeholder="e.g., 2024279060"
+                      />
+                      {errors.rollNumberTo && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors.rollNumberTo}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-4">
