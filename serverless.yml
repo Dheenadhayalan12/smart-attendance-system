@@ -104,6 +104,14 @@ functions:
           method: delete
           cors: true
 
+  getTeacherStatistics:
+    handler: backend/handlers/classes.getTeacherStatistics
+    events:
+      - http:
+          path: teachers/statistics
+          method: get
+          cors: true
+
   # Session Management functions
   createSession:
     handler: backend/handlers/sessions.createSession

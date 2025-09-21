@@ -448,3 +448,109 @@ module.exports.deleteClass = async (event) => {
     };
   }
 };
+
+// Get teacher statistics for dashboard
+module.exports.getTeacherStatistics = async (event) => {
+  try {
+    // Verify authentication
+    const token = event.headers.Authorization || event.headers.authorization;
+    if (!token) {
+      return {
+        statusCode: 401,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ success: false, message: "No token provided" }),
+      };
+    }
+
+    const decoded = verifyToken(token);
+
+    // Get all classes for this teacher
+    const classesResult = await dynamodb.send(
+      new ScanCommand({
+        TableName: "Classes",
+        FilterExpression: "teacherId = :teacherId",
+        ExpressionAttributeValues: {
+          ":teacherId": decoded.teacherId,
+        },
+      })
+    );
+
+    const classes = classesResult.Items || [];
+    const totalClasses = classes.length;
+
+    // Get all sessions for this teacher
+    const sessionsResult = await dynamodb.send(
+      new ScanCommand({
+        TableName: "Sessions",
+        FilterExpression: "teacherId = :teacherId",
+        ExpressionAttributeValues: {
+          ":teacherId": decoded.teacherId,
+        },
+      })
+    );
+
+    const sessions = sessionsResult.Items || [];
+    const totalSessions = sessions.length;
+
+    // Calculate total students from all classes
+    let totalStudents = 0;
+    classes.forEach((cls) => {
+      if (cls.rollNumberRange) {
+        const [from, to] = cls.rollNumberRange.split("-");
+        if (from && to) {
+          // Extract numbers from roll numbers (e.g., "21CS001" -> 1, "21CS060" -> 60)
+          const fromNum = parseInt(from.replace(/\D/g, ""));
+          const toNum = parseInt(to.replace(/\D/g, ""));
+          if (!isNaN(fromNum) && !isNaN(toNum)) {
+            totalStudents += toNum - fromNum + 1;
+          }
+        }
+      }
+    });
+
+    // Calculate average attendance rate from sessions
+    let totalAttendanceRate = 0;
+    let sessionsWithAttendance = 0;
+    sessions.forEach((session) => {
+      if (session.attendanceCount && session.expectedStudents) {
+        totalAttendanceRate +=
+          (session.attendanceCount / session.expectedStudents) * 100;
+        sessionsWithAttendance++;
+      }
+    });
+
+    const averageAttendanceRate =
+      sessionsWithAttendance > 0
+        ? Math.round((totalAttendanceRate / sessionsWithAttendance) * 10) / 10
+        : 0;
+
+    const statistics = {
+      totalClasses,
+      totalStudents,
+      totalSessions,
+      averageAttendanceRate,
+      recentActivity: [],
+      classPerformance: [],
+    };
+
+    return {
+      statusCode: 200,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({
+        success: true,
+        statistics,
+      }),
+    };
+  } catch (error) {
+    console.error("Get teacher statistics error:", error);
+    return {
+      statusCode: 500,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      }),
+    };
+  }
+};
