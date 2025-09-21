@@ -17,7 +17,11 @@ const Classes = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [sessionHistory, setSessionHistory] = useState([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -27,7 +31,14 @@ const Classes = () => {
     rollNumberTo: "",
   });
 
+  // Session form state
+  const [sessionFormData, setSessionFormData] = useState({
+    topic: "",
+    expiryTime: "",
+  });
+
   const [errors, setErrors] = useState({});
+  const [sessionErrors, setSessionErrors] = useState({});
 
   // Mock data for now - will be replaced with API calls
   useEffect(() => {
@@ -40,6 +51,8 @@ const Classes = () => {
         rollNumberTo: "2024279030",
         studentCount: 25,
         createdAt: "2024-01-15",
+        hasActiveSession: true,
+        activeSessionId: "session-1",
       },
       {
         id: 2,
@@ -49,6 +62,7 @@ const Classes = () => {
         rollNumberTo: "2024279060",
         studentCount: 18,
         createdAt: "2024-01-20",
+        hasActiveSession: false,
       },
       {
         id: 3,
@@ -58,6 +72,7 @@ const Classes = () => {
         rollNumberTo: "2024279090",
         studentCount: 30,
         createdAt: "2024-02-01",
+        hasActiveSession: false,
       },
     ];
 
@@ -191,24 +206,89 @@ const Classes = () => {
   };
 
   const handleStartSession = (classItem) => {
-    // For now, show a toast - this will be implemented with session creation logic
-    toast.success(`Starting session for ${classItem.name}...`);
-    // In the future, this will create a new session and navigate to monitor page
-    // navigate(`/monitor?classId=${classItem.id}&sessionId=${newSessionId}`);
+    setSelectedClass(classItem);
+    setSessionFormData({
+      topic: "",
+      expiryTime: "",
+    });
+    setSessionErrors({});
+    setShowSessionModal(true);
+  };
+
+  const handleViewQRCode = (classItem) => {
+    setSelectedClass(classItem);
+    setShowQRModal(true);
   };
 
   const handleViewSessionHistory = (classItem) => {
-    // For now, show a toast - this will show session history modal or page
-    toast.info(`Viewing session history for ${classItem.name}`);
-    // In the future, this might open a modal or navigate to a dedicated page
-    // setShowSessionHistoryModal(true);
-    // setSelectedClassForHistory(classItem);
+    setSelectedClass(classItem);
+    // TODO: Fetch session history from backend API
+    // For now using mock data
+    const mockHistory = [
+      {
+        id: "session-1",
+        topic: "Introduction to Algorithms",
+        createdAt: "2024-12-25T15:00:00Z",
+        endedAt: null,
+        attendanceCount: 18,
+        isActive: true,
+      },
+      {
+        id: "session-2",
+        topic: "Basic Data Structures",
+        createdAt: "2024-12-20T14:00:00Z",
+        endedAt: "2024-12-20T15:30:00Z",
+        attendanceCount: 22,
+        isActive: false,
+      },
+    ];
+    setSessionHistory(mockHistory);
+    setShowHistoryModal(true);
   };
 
   const closeModal = () => {
     setShowCreateModal(false);
     setShowEditModal(false);
+    setShowSessionModal(false);
+    setShowQRModal(false);
+    setShowHistoryModal(false);
     resetForm();
+  };
+
+  const handleSessionSubmit = async (e) => {
+    e.preventDefault();
+    setSessionErrors({});
+
+    try {
+      // TODO: Call backend API to create session
+      // For now, simulate session creation
+      const newSession = {
+        id: `session-${Date.now()}`,
+        topic: sessionFormData.topic,
+        classId: selectedClass.id,
+        expiryTime: sessionFormData.expiryTime,
+        qrCode: `data:image/svg+xml;base64,${btoa(
+          `<svg>Mock QR Code for ${sessionFormData.topic}</svg>`
+        )}`,
+        createdAt: new Date().toISOString(),
+        isActive: true,
+      };
+
+      // Update the class to have an active session
+      setClasses((prevClasses) =>
+        prevClasses.map((cls) =>
+          cls.id === selectedClass.id
+            ? { ...cls, hasActiveSession: true, activeSession: newSession }
+            : cls
+        )
+      );
+
+      toast.success(`Session "${sessionFormData.topic}" started successfully!`);
+      closeModal();
+    } catch (error) {
+      console.error("Error creating session:", error);
+      toast.error("Failed to start session. Please try again.");
+    }
   };
 
   if (loading) {
@@ -332,12 +412,21 @@ const Classes = () => {
                     >
                       View Students
                     </button>
-                    <button
-                      onClick={() => handleStartSession(classItem)}
-                      className="px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
-                    >
-                      Start Session
-                    </button>
+                    {!classItem.hasActiveSession ? (
+                      <button
+                        onClick={() => handleStartSession(classItem)}
+                        className="px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+                      >
+                        Start Session
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleViewQRCode(classItem)}
+                        className="px-3 py-2 text-sm bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
+                      >
+                        View QR Code
+                      </button>
+                    )}
                     <button
                       onClick={() => handleViewSessionHistory(classItem)}
                       className="col-span-2 px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
@@ -485,6 +574,276 @@ const Classes = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Session Creation Modal */}
+      <AnimatePresence>
+        {showSessionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Start New Session
+                </h3>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSessionSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Session Topic
+                  </label>
+                  <input
+                    type="text"
+                    value={sessionFormData.topic}
+                    onChange={(e) =>
+                      setSessionFormData({
+                        ...sessionFormData,
+                        topic: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter session topic"
+                    required
+                  />
+                  {sessionErrors.topic && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {sessionErrors.topic}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Session Duration (minutes)
+                  </label>
+                  <select
+                    value={sessionFormData.expiryTime}
+                    onChange={(e) =>
+                      setSessionFormData({
+                        ...sessionFormData,
+                        expiryTime: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select duration</option>
+                    <option value="30">30 minutes</option>
+                    <option value="60">1 hour</option>
+                    <option value="90">1.5 hours</option>
+                    <option value="120">2 hours</option>
+                  </select>
+                  {sessionErrors.expiryTime && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {sessionErrors.expiryTime}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Start Session
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {showQRModal && selectedClass && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Session QR Code
+                </h3>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="text-center">
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900">
+                    {selectedClass.name}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {selectedClass.subject}
+                  </p>
+                  {selectedClass.activeSession && (
+                    <p className="text-sm text-green-600 mt-1">
+                      Topic: {selectedClass.activeSession.topic}
+                    </p>
+                  )}
+                </div>
+
+                <div className="bg-gray-100 p-6 rounded-lg mb-4">
+                  <div className="w-48 h-48 mx-auto bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                    {selectedClass.activeSession?.qrCode ? (
+                      <img
+                        src={selectedClass.activeSession.qrCode}
+                        alt="Session QR Code"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-center">
+                        <div className="text-4xl mb-2">📱</div>
+                        <p className="text-sm">QR Code will appear here</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-4">
+                  Students can scan this code to mark their attendance
+                </p>
+
+                <div className="flex justify-center space-x-3">
+                  <button
+                    onClick={closeModal}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      // TODO: Add share functionality
+                      toast.success("QR Code copied to clipboard");
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Share QR
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Session History Modal */}
+      <AnimatePresence>
+        {showHistoryModal && selectedClass && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Session History - {selectedClass.name}
+                </h3>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {sessionHistory.length > 0 ? (
+                  sessionHistory.map((session) => (
+                    <div
+                      key={session.id}
+                      className="border border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-gray-900">
+                          {session.topic}
+                        </h4>
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            session.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {session.isActive ? "Active" : "Completed"}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p>
+                          Started:{" "}
+                          {new Date(session.createdAt).toLocaleString()}
+                        </p>
+                        {session.endedAt && (
+                          <p>
+                            Ended: {new Date(session.endedAt).toLocaleString()}
+                          </p>
+                        )}
+                        <p>Attendance: {session.attendanceCount} students</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>No sessions found for this class</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={closeModal}
+                  className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Close
+                </button>
               </div>
             </motion.div>
           </motion.div>
