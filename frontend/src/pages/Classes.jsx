@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import QRCode from "qrcode";
 import { sessionService } from "../services/sessionService";
+import { classService } from "../services/classService";
 
 const Classes = () => {
   const [classes, setClasses] = useState([]);
@@ -40,48 +41,38 @@ const Classes = () => {
   const [errors, setErrors] = useState({});
   const [sessionErrors, setSessionErrors] = useState({});
 
-  // Mock data for now - will be replaced with API calls
+  // Load classes from backend
   useEffect(() => {
-    const mockClasses = [
-      {
-        id: 1,
-        name: "Computer Science 101",
-        subject: "Computer Science",
-        rollNumberFrom: "2024279000",
-        rollNumberTo: "2024279030",
-        studentCount: 25,
-        createdAt: "2024-01-15",
-        hasActiveSession: true,
-        activeSessionId: "session-1",
-      },
-      {
-        id: 2,
-        name: "Data Structures",
-        subject: "Computer Science",
-        rollNumberFrom: "2024279031",
-        rollNumberTo: "2024279060",
-        studentCount: 18,
-        createdAt: "2024-01-20",
-        hasActiveSession: false,
-      },
-      {
-        id: 3,
-        name: "Web Development",
-        subject: "Computer Science",
-        rollNumberFrom: "2024279061",
-        rollNumberTo: "2024279090",
-        studentCount: 30,
-        createdAt: "2024-02-01",
-        hasActiveSession: false,
-      },
-    ];
-
-    // Simulate API call
-    setTimeout(() => {
-      setClasses(mockClasses);
-      setLoading(false);
-    }, 1000);
+    loadClasses();
   }, []);
+
+  const loadClasses = async () => {
+    try {
+      setLoading(true);
+      const response = await classService.getClasses();
+
+      if (response.success) {
+        // Transform backend data to match frontend expectations
+        const transformedClasses = response.classes.map((cls) => ({
+          id: cls.classId,
+          name: cls.name,
+          subject: cls.subject,
+          rollNumberFrom: cls.rollNumberFrom,
+          rollNumberTo: cls.rollNumberTo,
+          studentCount: cls.studentCount || 0,
+          createdAt: cls.createdAt,
+          hasActiveSession: cls.hasActiveSession || false,
+          activeSession: cls.activeSession || null,
+        }));
+        setClasses(transformedClasses);
+      }
+    } catch (error) {
+      console.error("Error loading classes:", error);
+      toast.error("Failed to load classes");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -139,29 +130,28 @@ const Classes = () => {
     try {
       if (selectedClass) {
         // Update existing class
-        const updatedClasses = classes.map((cls) =>
-          cls.id === selectedClass.id
-            ? { ...cls, ...formData, id: selectedClass.id }
-            : cls
+        const response = await classService.updateClass(
+          selectedClass.id,
+          formData
         );
-        setClasses(updatedClasses);
-        toast.success("Class updated successfully!");
-        setShowEditModal(false);
+        if (response.success) {
+          await loadClasses(); // Reload classes from backend
+          toast.success("Class updated successfully!");
+          setShowEditModal(false);
+        }
       } else {
         // Create new class
-        const newClass = {
-          id: Date.now(),
-          ...formData,
-          studentCount: 0,
-          createdAt: new Date().toISOString().split("T")[0],
-        };
-        setClasses((prev) => [...prev, newClass]);
-        toast.success("Class created successfully!");
-        setShowCreateModal(false);
+        const response = await classService.createClass(formData);
+        if (response.success) {
+          await loadClasses(); // Reload classes from backend
+          toast.success("Class created successfully!");
+          setShowCreateModal(false);
+        }
       }
 
       resetForm();
-    } catch {
+    } catch (error) {
+      console.error("Error saving class:", error);
       toast.error("Error saving class. Please try again.");
     }
   };
@@ -177,10 +167,18 @@ const Classes = () => {
     setShowEditModal(true);
   };
 
-  const handleDelete = (classId) => {
+  const handleDelete = async (classId) => {
     if (window.confirm("Are you sure you want to delete this class?")) {
-      setClasses((prev) => prev.filter((cls) => cls.id !== classId));
-      toast.success("Class deleted successfully!");
+      try {
+        const response = await classService.deleteClass(classId);
+        if (response.success) {
+          await loadClasses(); // Reload classes from backend
+          toast.success("Class deleted successfully!");
+        }
+      } catch (error) {
+        console.error("Error deleting class:", error);
+        toast.error("Error deleting class. Please try again.");
+      }
     }
   };
 
