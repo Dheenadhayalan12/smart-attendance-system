@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   PlusIcon,
   PencilIcon,
@@ -11,6 +12,7 @@ import {
 import toast from "react-hot-toast";
 
 const Classes = () => {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -178,6 +180,31 @@ const Classes = () => {
     setSelectedClass(null);
   };
 
+  // Button handlers for class cards
+  const handleViewStudents = (classItem) => {
+    // Navigate to students page with class filter
+    navigate(
+      `/students?classId=${classItem.id}&className=${encodeURIComponent(
+        classItem.name
+      )}`
+    );
+  };
+
+  const handleStartSession = (classItem) => {
+    // For now, show a toast - this will be implemented with session creation logic
+    toast.success(`Starting session for ${classItem.name}...`);
+    // In the future, this will create a new session and navigate to monitor page
+    // navigate(`/monitor?classId=${classItem.id}&sessionId=${newSessionId}`);
+  };
+
+  const handleViewSessionHistory = (classItem) => {
+    // For now, show a toast - this will show session history modal or page
+    toast.info(`Viewing session history for ${classItem.name}`);
+    // In the future, this might open a modal or navigate to a dedicated page
+    // setShowSessionHistoryModal(true);
+    // setSelectedClassForHistory(classItem);
+  };
+
   const closeModal = () => {
     setShowCreateModal(false);
     setShowEditModal(false);
@@ -299,13 +326,22 @@ const Classes = () => {
 
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <div className="grid grid-cols-2 gap-2">
-                    <button className="px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                    <button
+                      onClick={() => handleViewStudents(classItem)}
+                      className="px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
                       View Students
                     </button>
-                    <button className="px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors">
+                    <button
+                      onClick={() => handleStartSession(classItem)}
+                      className="px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+                    >
                       Start Session
                     </button>
-                    <button className="col-span-2 px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">
+                    <button
+                      onClick={() => handleViewSessionHistory(classItem)}
+                      className="col-span-2 px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+                    >
                       View Session History
                     </button>
                   </div>

@@ -5,7 +5,6 @@ import {
   HomeIcon,
   AcademicCapIcon,
   UserGroupIcon,
-  ClipboardDocumentListIcon,
   EyeIcon,
   ChartBarIcon,
   Bars3Icon,
@@ -25,7 +24,6 @@ const Layout = ({ children }) => {
     { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
     { name: "Classes", href: "/classes", icon: AcademicCapIcon },
     { name: "Students", href: "/students", icon: UserGroupIcon },
-    { name: "Sessions", href: "/sessions", icon: ClipboardDocumentListIcon },
     { name: "Monitor", href: "/monitor", icon: EyeIcon },
     { name: "Reports", href: "/reports", icon: ChartBarIcon },
   ];

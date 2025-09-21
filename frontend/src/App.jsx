@@ -14,7 +14,6 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Classes from "./pages/Classes";
 import Students from "./pages/Students";
-import Sessions from "./pages/Sessions";
 import AttendanceMonitor from "./pages/AttendanceMonitor";
 import Reports from "./pages/Reports";
 import StudentMobile from "./pages/StudentMobile";
@@ -86,14 +85,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Students />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sessions"
-        element={
-          <ProtectedRoute>
-            <Sessions />
           </ProtectedRoute>
         }
       />
