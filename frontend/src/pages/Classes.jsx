@@ -49,26 +49,56 @@ const Classes = () => {
   const loadClasses = async () => {
     try {
       setLoading(true);
-      const response = await classService.getClasses();
+      console.log("Loading classes from backend...");
 
-      if (response.success) {
+      // Add timeout to the request
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 10000)
+      );
+
+      const response = await Promise.race([
+        classService.getClasses(),
+        timeoutPromise,
+      ]);
+
+      console.log("Backend response:", response);
+
+      // Handle backend response structure: {success: true, data: [...]}
+      if (response && response.success && Array.isArray(response.data)) {
         // Transform backend data to match frontend expectations
-        const transformedClasses = response.classes.map((cls) => ({
-          id: cls.classId,
-          name: cls.name,
-          subject: cls.subject,
-          rollNumberFrom: cls.rollNumberFrom,
-          rollNumberTo: cls.rollNumberTo,
-          studentCount: cls.studentCount || 0,
-          createdAt: cls.createdAt,
-          hasActiveSession: cls.hasActiveSession || false,
-          activeSession: cls.activeSession || null,
-        }));
+        const transformedClasses = response.data.map((cls) => {
+          // Parse roll number range (e.g., "21CS001-21CS060" -> from: "21CS001", to: "21CS060")
+          const rollRange = cls.rollNumberRange || "";
+          const [rollNumberFrom, rollNumberTo] = rollRange.includes("-")
+            ? rollRange.split("-").map((s) => s.trim())
+            : ["", ""];
+
+          return {
+            id: cls.classId,
+            name: cls.subject, // Backend uses 'subject' field
+            subject: cls.subject,
+            rollNumberFrom,
+            rollNumberTo,
+            studentCount: cls.studentCount || 0,
+            createdAt: cls.createdAt,
+            hasActiveSession: cls.hasActiveSession || false,
+            activeSession: cls.activeSession || null,
+          };
+        });
         setClasses(transformedClasses);
+        console.log("Classes loaded successfully:", transformedClasses);
+      } else {
+        console.log("No classes data or invalid response structure");
+        setClasses([]);
       }
     } catch (error) {
       console.error("Error loading classes:", error);
-      toast.error("Failed to load classes");
+      if (error.message === "Request timeout") {
+        toast.error("Request timed out. Please try again.");
+      } else {
+        toast.error("Failed to load classes");
+      }
+      setClasses([]);
     } finally {
       setLoading(false);
     }
@@ -141,11 +171,20 @@ const Classes = () => {
         }
       } else {
         // Create new class
+        console.log("Creating class with data:", formData);
         const response = await classService.createClass(formData);
+        console.log("Class creation response:", response);
+
         if (response.success) {
-          await loadClasses(); // Reload classes from backend
+          // Add a small delay to ensure database consistency
+          setTimeout(async () => {
+            await loadClasses(); // Reload classes from backend
+          }, 500);
+
           toast.success("Class created successfully!");
           setShowCreateModal(false);
+        } else {
+          toast.error(response.message || "Failed to create class");
         }
       }
 
@@ -214,7 +253,9 @@ const Classes = () => {
     try {
       // Fetch session history from backend API
       const response = await sessionService.getSessionsByClass(classItem.id);
-      if (response.success) {
+      console.log("Session history response:", response);
+
+      if (response && response.success && Array.isArray(response.sessions)) {
         const sessions = response.sessions.map((session) => ({
           id: session.sessionId,
           topic: session.sessionName,
@@ -225,7 +266,8 @@ const Classes = () => {
         }));
         setSessionHistory(sessions);
       } else {
-        // Fallback to empty array if no sessions found
+        // Fallback to empty array if no sessions found or invalid response
+        console.log("No sessions found or invalid response structure");
         setSessionHistory([]);
       }
     } catch (error) {
@@ -257,7 +299,7 @@ const Classes = () => {
       );
 
       if (sessionResponse.success) {
-        const session = sessionResponse.session;
+        const session = sessionResponse.data;
 
         // Update the class to have an active session
         setClasses((prevClasses) =>

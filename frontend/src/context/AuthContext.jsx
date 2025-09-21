@@ -19,19 +19,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check if user is logged in on app startup
     const initializeAuth = async () => {
-      const token = localStorage.getItem("token");
-      const userData = localStorage.getItem("user");
+      const token = authService.getToken();
+      const userData = authService.getCurrentUser();
 
       if (token && userData) {
         try {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
+          setUser(userData);
           // Set the token in axios headers
           authService.setAuthToken(token);
         } catch (error) {
-          console.error("Error parsing user data:", error);
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
+          console.error("Error initializing auth:", error);
+          authService.logout();
         }
       }
 
@@ -52,12 +50,9 @@ export const AuthProvider = ({ children }) => {
 
       const teacher = { teacherId, name, email };
 
-      // Store token and user data
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(teacher));
-
-      // Set the token in axios headers
-      authService.setAuthToken(token);
+      // Store token and user data using authService
+      authService.setToken(token);
+      authService.setCurrentUser(teacher);
 
       setUser(teacher);
       toast.success(`Welcome back, ${teacher.name}!`, {
@@ -95,12 +90,9 @@ export const AuthProvider = ({ children }) => {
 
       const teacher = { teacherId, name: userName, email: userEmail };
 
-      // Store token and user data
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(teacher));
-
-      // Set the token in axios headers
-      authService.setAuthToken(token);
+      // Store token and user data using authService
+      authService.setToken(token);
+      authService.setCurrentUser(teacher);
 
       setUser(teacher);
       toast.success(`Welcome to Smart Attendance, ${teacher.name}!`, {
@@ -129,9 +121,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    authService.setAuthToken(null);
+    authService.logout();
     setUser(null);
     toast.success("Logged out successfully", {
       icon: "👋",

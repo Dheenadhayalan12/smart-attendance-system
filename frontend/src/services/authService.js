@@ -40,13 +40,49 @@ api.interceptors.response.use(
   }
 );
 
+// Helper function to set auth token in axios headers
+const setAuthToken = (token) => {
+  if (token) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common["Authorization"];
+  }
+};
+
 export const authService = {
-  setAuthToken: (token) => {
+  setAuthToken: setAuthToken,
+
+  getToken: () => {
+    return localStorage.getItem("token");
+  },
+
+  setToken: (token) => {
     if (token) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      localStorage.setItem("token", token);
+      setAuthToken(token);
     } else {
-      delete api.defaults.headers.common["Authorization"];
+      localStorage.removeItem("token");
+      setAuthToken(null);
     }
+  },
+
+  getCurrentUser: () => {
+    const userStr = localStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : null;
+  },
+
+  setCurrentUser: (user) => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("user");
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setAuthToken(null);
   },
 
   login: async (email, password) => {

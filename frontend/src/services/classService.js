@@ -30,51 +30,13 @@ class ClassService {
       console.log("Backend classes fetched successfully:", result);
       return result;
     } catch (error) {
-      console.log("Backend not available, using fallback mode:", error.message);
+      console.log("Backend not available:", error.message);
 
-      // Fallback: Return mock data
+      // Return empty result when backend is not available
       return {
-        success: true,
-        classes: [
-          {
-            classId: "1",
-            name: "Computer Science 101",
-            subject: "Computer Science",
-            rollNumberFrom: "2024279000",
-            rollNumberTo: "2024279030",
-            studentCount: 25,
-            createdAt: "2024-01-15T00:00:00Z",
-            hasActiveSession: true,
-            activeSession: {
-              sessionId: "session-1",
-              topic: "Introduction to Programming",
-              qrCode:
-                "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4gIDxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJ3aGl0ZSIvPiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iYmxhY2siIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5EZW1vIFFSIENvZGU8L3RleHQ+PC9zdmc+",
-              createdAt: "2024-09-21T10:00:00Z",
-              isActive: true,
-            },
-          },
-          {
-            classId: "2",
-            name: "Data Structures",
-            subject: "Computer Science",
-            rollNumberFrom: "2024279031",
-            rollNumberTo: "2024279060",
-            studentCount: 18,
-            createdAt: "2024-01-20T00:00:00Z",
-            hasActiveSession: false,
-          },
-          {
-            classId: "3",
-            name: "Web Development",
-            subject: "Computer Science",
-            rollNumberFrom: "2024279061",
-            rollNumberTo: "2024279090",
-            studentCount: 30,
-            createdAt: "2024-02-01T00:00:00Z",
-            hasActiveSession: false,
-          },
-        ],
+        success: false,
+        error: "Backend not available",
+        data: [],
       };
     }
   }

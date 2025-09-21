@@ -132,12 +132,61 @@ module.exports.getClasses = async (event) => {
       })
     );
 
+    // For each class, check if it has an active session
+    const classesWithSessions = await Promise.all(
+      (result.Items || []).map(async (classItem) => {
+        try {
+          // Check for active sessions
+          const sessionsResult = await dynamodb.send(
+            new ScanCommand({
+              TableName: "Sessions",
+              FilterExpression: "classId = :classId AND isActive = :isActive",
+              ExpressionAttributeValues: {
+                ":classId": classItem.classId,
+                ":isActive": true,
+              },
+            })
+          );
+
+          const activeSessions = sessionsResult.Items || [];
+          const hasActiveSession = activeSessions.length > 0;
+          const activeSession = hasActiveSession ? activeSessions[0] : null;
+
+          return {
+            ...classItem,
+            hasActiveSession,
+            activeSession: activeSession
+              ? {
+                  sessionId: activeSession.sessionId,
+                  sessionName: activeSession.sessionName,
+                  startTime: activeSession.startTime,
+                  endTime: activeSession.endTime,
+                  qrCode: activeSession.qrCode,
+                  isActive: activeSession.isActive,
+                }
+              : null,
+          };
+        } catch (error) {
+          console.error(
+            "Error checking sessions for class:",
+            classItem.classId,
+            error
+          );
+          return {
+            ...classItem,
+            hasActiveSession: false,
+            activeSession: null,
+          };
+        }
+      })
+    );
+
     return {
       statusCode: 200,
       headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({
         success: true,
-        data: result.Items || [],
+        data: classesWithSessions,
       }),
     };
   } catch (error) {
