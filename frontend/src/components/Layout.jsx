@@ -34,7 +34,7 @@ const Layout = ({ children }) => {
   return (
     <div
       className="flex h-screen"
-      style={{ backgroundColor: "var(--color-primary-bg)" }}
+      style={{ backgroundColor: "var(--color-bg-primary)" }}
     >
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
@@ -61,8 +61,11 @@ const Layout = ({ children }) => {
             animate={{ x: 0 }}
             exit={{ x: -300 }}
             transition={{ type: "tween", duration: 0.3 }}
-            className="fixed inset-y-0 left-0 z-50 w-64 shadow-xl lg:hidden"
-            style={{ backgroundColor: "var(--color-card-bg)" }}
+            className="fixed inset-y-0 left-0 z-50 w-80 lg:hidden"
+            style={{
+              backgroundColor: "var(--color-bg-secondary)",
+              boxShadow: "var(--shadow-xl)",
+            }}
           >
             <SidebarContent
               navigation={navigation}
@@ -77,7 +80,7 @@ const Layout = ({ children }) => {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
-        <div className="flex flex-col w-64">
+        <div className="flex flex-col w-80">
           <SidebarContent
             navigation={navigation}
             isActivePath={isActivePath}
@@ -89,41 +92,23 @@ const Layout = ({ children }) => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top nav */}
-        <header
-          className="shadow-sm border-b"
-          style={{
-            backgroundColor: "var(--color-card-bg)",
-            borderColor: "var(--color-border)",
-          }}
-        >
-          <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex items-center">
-              <button
-                type="button"
-                className="lg:hidden p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset transition-colors"
-                style={{ color: "var(--color-primary-text)" }}
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Bars3Icon className="h-6 w-6" />
-              </button>
-              <h1
-                className="ml-3 lg:ml-0 text-2xl font-semibold"
-                style={{
-                  color: "var(--color-primary-text)",
-                  fontFamily: "Poppins, sans-serif",
-                }}
-              >
-                {navigation.find((item) => isActivePath(item.href))?.name ||
-                  "Smart Attendance"}
-              </h1>
-            </div>
-
-            {/* Removed duplicate notification and profile section */}
-          </div>
+        {/* Mobile header */}
+        <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <button
+            type="button"
+            className="p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
+          <h1 className="text-lg font-semibold text-gray-900">
+            {navigation.find((item) => isActivePath(item.href))?.name ||
+              "Smart Attendance"}
+          </h1>
+          <div className="w-10"></div> {/* Spacer for centering */}
         </header>
 
-        {/* Page content */}
+        {/* Page content - removed top header completely */}
         <main className="flex-1 overflow-y-auto">
           <motion.div
             key={location.pathname}
@@ -151,7 +136,7 @@ const SidebarContent = ({
     <div
       className="flex flex-col h-full border-r"
       style={{
-        backgroundColor: "var(--color-card-bg)",
+        backgroundColor: "var(--color-bg-secondary)",
         borderColor: "var(--color-border)",
       }}
     >
@@ -159,29 +144,33 @@ const SidebarContent = ({
       <div className="flex items-center justify-between px-6 py-6">
         <div className="flex items-center">
           <div
-            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
+            className="h-12 w-12 rounded-xl flex items-center justify-center"
             style={{
               background:
-                "linear-gradient(135deg, var(--color-success), var(--color-subtle-accent))",
+                "linear-gradient(135deg, var(--color-primary), var(--color-info))",
+              boxShadow: "var(--shadow-md)",
             }}
           >
-            <UserGroupIcon className="h-6 w-6 text-white" />
+            <UserGroupIcon
+              className="h-6 w-6"
+              style={{ color: "var(--color-text-inverse)" }}
+            />
           </div>
           <div className="ml-3">
             <span
-              className="text-lg font-bold"
+              className="text-xl font-bold"
               style={{
-                color: "var(--color-primary-text)",
-                fontFamily: "Poppins, sans-serif",
+                color: "var(--color-text-primary)",
+                fontFamily: "Manrope, sans-serif",
               }}
             >
               Smart
             </span>
             <span
-              className="text-lg font-bold ml-1"
+              className="text-xl font-bold ml-1"
               style={{
-                color: "var(--color-success)",
-                fontFamily: "Poppins, sans-serif",
+                color: "var(--color-info)",
+                fontFamily: "Manrope, sans-serif",
               }}
             >
               Attendance
@@ -191,8 +180,14 @@ const SidebarContent = ({
         {onClose && (
           <button
             type="button"
-            className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
-            style={{ color: "var(--color-primary-text)" }}
+            className="lg:hidden p-2 rounded-md transition-colors"
+            style={{ color: "var(--color-text-secondary)" }}
+            onMouseEnter={(e) =>
+              (e.target.style.backgroundColor = "var(--color-hover)")
+            }
+            onMouseLeave={(e) =>
+              (e.target.style.backgroundColor = "transparent")
+            }
             onClick={onClose}
           >
             <XMarkIcon className="h-6 w-6" />
@@ -215,23 +210,37 @@ const SidebarContent = ({
                 to={item.href}
                 onClick={onClose}
                 className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                  isActive ? "text-white shadow-lg" : "hover:bg-gray-100"
+                  isActive ? "" : ""
                 }`}
                 style={
                   isActive
                     ? {
-                        background: `linear-gradient(135deg, var(--color-success), var(--color-subtle-accent))`,
-                        boxShadow: "0 10px 25px rgba(34, 139, 34, 0.25)",
+                        background:
+                          "linear-gradient(135deg, var(--color-primary), var(--color-primary-light))",
+                        color: "var(--color-text-inverse)",
+                        boxShadow: "var(--shadow-lg)",
                       }
-                    : { color: "var(--color-primary-text)" }
+                    : { color: "var(--color-text-secondary)" }
                 }
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.target.style.backgroundColor = "var(--color-hover)";
+                    e.target.style.color = "var(--color-text-primary)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.target.style.backgroundColor = "transparent";
+                    e.target.style.color = "var(--color-text-secondary)";
+                  }
+                }}
               >
                 <item.icon
-                  className={`mr-3 h-5 w-5 transition-colors ${
-                    isActive ? "text-white" : "group-hover:opacity-70"
-                  }`}
+                  className="mr-3 h-5 w-5 transition-colors"
                   style={
-                    !isActive ? { color: "var(--color-primary-text)" } : {}
+                    isActive
+                      ? { color: "var(--color-text-inverse)" }
+                      : { color: "inherit" }
                   }
                 />
                 {item.name}
@@ -248,24 +257,29 @@ const SidebarContent = ({
       >
         <div
           className="flex items-center mb-4 px-4 py-3 rounded-xl"
-          style={{ backgroundColor: "var(--color-accent-light)" }}
+          style={{ backgroundColor: "var(--color-bg-accent)" }}
         >
           <div
-            className="h-10 w-10 rounded-full flex items-center justify-center"
+            className="h-12 w-12 rounded-full flex items-center justify-center"
             style={{
-              background: `linear-gradient(135deg, var(--color-success), var(--color-subtle-accent))`,
+              background:
+                "linear-gradient(135deg, var(--color-primary), var(--color-info))",
+              boxShadow: "var(--shadow-sm)",
             }}
           >
-            <span className="text-white text-sm font-bold">
+            <span
+              style={{ color: "var(--color-text-inverse)" }}
+              className="text-sm font-bold"
+            >
               {user?.name?.charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="ml-3 flex-1">
             <p
-              className="text-sm font-medium truncate"
+              className="text-sm font-semibold truncate"
               style={{
-                color: "var(--color-primary-text)",
-                fontFamily: "Poppins, sans-serif",
+                color: "var(--color-text-primary)",
+                fontFamily: "Manrope, sans-serif",
               }}
             >
               {user?.name}
@@ -280,15 +294,23 @@ const SidebarContent = ({
         </div>
         <button
           onClick={logout}
-          className="group flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl hover:bg-gray-100 transition-all duration-200"
+          className="group flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200"
           style={{
-            color: "var(--color-alert)",
-            fontFamily: "Poppins, sans-serif",
+            color: "var(--color-error)",
+            fontFamily: "Inter, sans-serif",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = "var(--color-error-light)";
+            e.target.style.color = "var(--color-error)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = "transparent";
+            e.target.style.color = "var(--color-error)";
           }}
         >
           <ArrowRightOnRectangleIcon
-            className="mr-3 h-5 w-5 group-hover:opacity-70"
-            style={{ color: "var(--color-alert)" }}
+            className="mr-3 h-5 w-5"
+            style={{ color: "inherit" }}
           />
           Sign out
         </button>
