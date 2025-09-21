@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import {
   PlusIcon,
   PencilIcon,
@@ -10,9 +9,10 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import QRCode from "qrcode";
+import { sessionService } from "../services/sessionService";
 
 const Classes = () => {
-  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -196,15 +196,6 @@ const Classes = () => {
   };
 
   // Button handlers for class cards
-  const handleViewStudents = (classItem) => {
-    // Navigate to students page with class filter
-    navigate(
-      `/students?classId=${classItem.id}&className=${encodeURIComponent(
-        classItem.name
-      )}`
-    );
-  };
-
   const handleStartSession = (classItem) => {
     setSelectedClass(classItem);
     setSessionFormData({
@@ -220,32 +211,33 @@ const Classes = () => {
     setShowQRModal(true);
   };
 
-  const handleViewSessionHistory = (classItem) => {
+  const handleViewSessionHistory = async (classItem) => {
     setSelectedClass(classItem);
-    // TODO: Fetch session history from backend API
-    // For now using mock data
-    const mockHistory = [
-      {
-        id: "session-1",
-        topic: "Introduction to Algorithms",
-        createdAt: "2024-12-25T15:00:00Z",
-        endedAt: null,
-        attendanceCount: 18,
-        isActive: true,
-      },
-      {
-        id: "session-2",
-        topic: "Basic Data Structures",
-        createdAt: "2024-12-20T14:00:00Z",
-        endedAt: "2024-12-20T15:30:00Z",
-        attendanceCount: 22,
-        isActive: false,
-      },
-    ];
-    setSessionHistory(mockHistory);
+    try {
+      // Fetch session history from backend API
+      const response = await sessionService.getSessionsByClass(classItem.id);
+      if (response.success) {
+        const sessions = response.sessions.map((session) => ({
+          id: session.sessionId,
+          topic: session.sessionName,
+          createdAt: session.startTime,
+          endedAt: session.isActive ? null : session.endTime,
+          attendanceCount: session.attendanceCount || 0,
+          isActive: session.isActive,
+        }));
+        setSessionHistory(sessions);
+      } else {
+        // Fallback to empty array if no sessions found
+        setSessionHistory([]);
+      }
+    } catch (error) {
+      console.error("Error fetching session history:", error);
+      // Fallback to empty array on error
+      setSessionHistory([]);
+      toast.error("Failed to load session history");
+    }
     setShowHistoryModal(true);
   };
-
   const closeModal = () => {
     setShowCreateModal(false);
     setShowEditModal(false);
@@ -260,33 +252,45 @@ const Classes = () => {
     setSessionErrors({});
 
     try {
-      // TODO: Call backend API to create session
-      // For now, simulate session creation
-      const newSession = {
-        id: `session-${Date.now()}`,
-        topic: sessionFormData.topic,
-        classId: selectedClass.id,
-        expiryTime: sessionFormData.expiryTime,
-        qrCode: `data:image/svg+xml;base64,${btoa(
-          `<svg>Mock QR Code for ${sessionFormData.topic}</svg>`
-        )}`,
-        createdAt: new Date().toISOString(),
-        isActive: true,
-      };
-
-      // Update the class to have an active session
-      setClasses((prevClasses) =>
-        prevClasses.map((cls) =>
-          cls.id === selectedClass.id
-            ? { ...cls, hasActiveSession: true, activeSession: newSession }
-            : cls
-        )
+      // Call backend API to create session
+      const sessionResponse = await sessionService.createSession(
+        selectedClass.id,
+        sessionFormData
       );
 
-      toast.success(`Session "${sessionFormData.topic}" started successfully!`);
-      closeModal();
+      if (sessionResponse.success) {
+        const session = sessionResponse.session;
+
+        // Update the class to have an active session
+        setClasses((prevClasses) =>
+          prevClasses.map((cls) =>
+            cls.id === selectedClass.id
+              ? {
+                  ...cls,
+                  hasActiveSession: true,
+                  activeSession: {
+                    id: session.sessionId,
+                    topic: session.sessionName,
+                    qrCode: session.qrCode,
+                    createdAt: session.startTime,
+                    expiryDate: session.endTime,
+                    isActive: session.isActive,
+                  },
+                }
+              : cls
+          )
+        );
+
+        toast.success(
+          `Session "${sessionFormData.topic}" started successfully!`
+        );
+        closeModal();
+      } else {
+        throw new Error(sessionResponse.message || "Failed to create session");
+      }
     } catch (error) {
       console.error("Error creating session:", error);
+      setSessionErrors({ general: error.message });
       toast.error("Failed to start session. Please try again.");
     }
   };
@@ -405,13 +409,7 @@ const Classes = () => {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => handleViewStudents(classItem)}
-                      className="px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
-                    >
-                      View Students
-                    </button>
+                  <div className="grid grid-cols-1 gap-2">
                     {!classItem.hasActiveSession ? (
                       <button
                         onClick={() => handleStartSession(classItem)}
@@ -429,7 +427,7 @@ const Classes = () => {
                     )}
                     <button
                       onClick={() => handleViewSessionHistory(classItem)}
-                      className="col-span-2 px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+                      className="px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
                     >
                       View Session History
                     </button>
@@ -634,7 +632,7 @@ const Classes = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Session Duration (minutes)
+                    QR Code Expiry Time (minutes)
                   </label>
                   <select
                     value={sessionFormData.expiryTime}
@@ -647,7 +645,7 @@ const Classes = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
-                    <option value="">Select duration</option>
+                    <option value="">Select expiry time</option>
                     <option value="30">30 minutes</option>
                     <option value="60">1 hour</option>
                     <option value="90">1.5 hours</option>
@@ -659,6 +657,14 @@ const Classes = () => {
                     </p>
                   )}
                 </div>
+
+                {sessionErrors.general && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-600">
+                      {sessionErrors.general}
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex justify-end space-x-3 mt-6">
                   <button
