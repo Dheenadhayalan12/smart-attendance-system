@@ -278,6 +278,43 @@ const Classes = () => {
     }
     setShowHistoryModal(true);
   };
+
+  // Handle ending an active session
+  const handleEndSession = async () => {
+    if (!selectedClass?.activeSession?.id) return;
+
+    try {
+      const response = await sessionService.endSession(
+        selectedClass.activeSession.id
+      );
+
+      if (response.success) {
+        // Update the class to remove active session
+        setClasses((prevClasses) =>
+          prevClasses.map((cls) =>
+            cls.id === selectedClass.id
+              ? {
+                  ...cls,
+                  hasActiveSession: false,
+                  activeSession: null,
+                }
+              : cls
+          )
+        );
+
+        toast.success(
+          `Session "${selectedClass.activeSession.topic}" ended successfully!`
+        );
+        closeModal();
+      } else {
+        throw new Error(response.message || "Failed to end session");
+      }
+    } catch (error) {
+      console.error("Error ending session:", error);
+      toast.error(error.message || "Failed to end session");
+    }
+  };
+
   const closeModal = () => {
     setShowCreateModal(false);
     setShowEditModal(false);
@@ -796,6 +833,12 @@ const Classes = () => {
                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                   >
                     Close
+                  </button>
+                  <button
+                    onClick={handleEndSession}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    End Session
                   </button>
                   <button
                     onClick={() => {
