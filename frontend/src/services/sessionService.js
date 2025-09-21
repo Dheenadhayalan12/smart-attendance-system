@@ -130,7 +130,7 @@ class SessionService {
       const response = await fetch(
         `${API_BASE_URL}/sessions/${sessionId}/end`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -328,6 +328,25 @@ const Classes = () => {
     e.preventDefault();
     setSessionErrors({});
 
+    // Validate form data
+    const errors = {};
+    if (!sessionFormData.topic.trim()) {
+      errors.topic = "Session topic is required";
+    }
+    if (!sessionFormData.expiryTime) {
+      errors.expiryTime = "Session duration is required";
+    } else {
+      const duration = parseInt(sessionFormData.expiryTime);
+      if (isNaN(duration) || duration < 5 || duration > 480) {
+        errors.expiryTime = "Duration must be between 5 and 480 minutes";
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setSessionErrors(errors);
+      return;
+    }
+
     try {
       // Call backend API to create session
       const sessionResponse = await sessionService.createSession(
@@ -709,9 +728,12 @@ const Classes = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    QR Code Expiry Time (minutes)
+                    Session Duration (minutes)
                   </label>
-                  <select
+                  <input
+                    type="number"
+                    min="5"
+                    max="480"
                     value={sessionFormData.expiryTime}
                     onChange={(e) =>
                       setSessionFormData({
@@ -720,14 +742,12 @@ const Classes = () => {
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter duration in minutes (5-480)"
                     required
-                  >
-                    <option value="">Select expiry time</option>
-                    <option value="30">30 minutes</option>
-                    <option value="60">1 hour</option>
-                    <option value="90">1.5 hours</option>
-                    <option value="120">2 hours</option>
-                  </select>
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter a value between 5 minutes and 8 hours (480 minutes)
+                  </p>
                   {sessionErrors.expiryTime && (
                     <p className="mt-1 text-sm text-red-600">
                       {sessionErrors.expiryTime}
