@@ -255,8 +255,10 @@ module.exports.getStudentsByClass = async (event) => {
       email: student.email,
       department: student.department,
       registeredAt: student.registeredAt,
-      attendanceCount: student.attendanceCount,
+      attendanceCount: student.attendanceCount || 0,
       isActive: student.isActive,
+      isRegistered: true, // All students in DB are registered
+      attendanceRate: 0, // TODO: Calculate based on total sessions vs attended
     }));
 
     return {
@@ -264,7 +266,7 @@ module.exports.getStudentsByClass = async (event) => {
       headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({
         success: true,
-        data: students,
+        students: students,
       }),
     };
   } catch (error) {

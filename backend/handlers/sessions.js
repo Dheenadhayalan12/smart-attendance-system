@@ -236,12 +236,36 @@ module.exports.getSessionsByClass = async (event) => {
       })
     );
 
+    // Check and update expired sessions
+    const currentTime = new Date();
+    const sessions = result.Items || [];
+
+    for (const session of sessions) {
+      const endTime = new Date(session.endTime);
+      if (session.isActive && currentTime > endTime) {
+        // Session has expired, mark as inactive
+        await dynamodb.send(
+          new UpdateCommand({
+            TableName: "Sessions",
+            Key: { sessionId: session.sessionId },
+            UpdateExpression: "SET isActive = :inactive, endedAt = :endedAt",
+            ExpressionAttributeValues: {
+              ":inactive": false,
+              ":endedAt": currentTime.toISOString(),
+            },
+          })
+        );
+        session.isActive = false;
+        session.endedAt = currentTime.toISOString();
+      }
+    }
+
     return {
       statusCode: 200,
       headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({
         success: true,
-        data: result.Items || [],
+        sessions: sessions,
       }),
     };
   } catch (error) {
@@ -303,12 +327,34 @@ module.exports.getSession = async (event) => {
       };
     }
 
+    // Check and update if session is expired
+    const session = result.Item;
+    const currentTime = new Date();
+    const endTime = new Date(session.endTime);
+
+    if (session.isActive && currentTime > endTime) {
+      // Session has expired, mark as inactive
+      await dynamodb.send(
+        new UpdateCommand({
+          TableName: "Sessions",
+          Key: { sessionId: session.sessionId },
+          UpdateExpression: "SET isActive = :inactive, endedAt = :endedAt",
+          ExpressionAttributeValues: {
+            ":inactive": false,
+            ":endedAt": currentTime.toISOString(),
+          },
+        })
+      );
+      session.isActive = false;
+      session.endedAt = currentTime.toISOString();
+    }
+
     return {
       statusCode: 200,
       headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({
         success: true,
-        data: result.Item,
+        session: session,
       }),
     };
   } catch (error) {

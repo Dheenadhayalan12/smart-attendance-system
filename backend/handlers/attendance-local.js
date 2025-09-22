@@ -72,6 +72,209 @@ const verifyFaceLocal = async (faceImageBase64, expectedStudentId) => {
 };
 
 // Mark attendance for a student (simplified for local development)
+// Mark attendance for a student (mobile flow - no pre-existing students required)
+module.exports.markAttendanceMobile = async (event) => {
+  try {
+    const { qrData, rollNumber, faceImageBase64 } = JSON.parse(event.body);
+
+    // Validate required fields
+    if (!qrData || !rollNumber || !faceImageBase64) {
+      return {
+        statusCode: 400,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({
+          success: false,
+          message: "QR data, roll number, and face image are required",
+        }),
+      };
+    }
+
+    // Step 1: Validate QR code and session
+    const qrValidation = await validateQRData(qrData);
+    if (!qrValidation.valid) {
+      return {
+        statusCode: 400,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({
+          success: false,
+          message: qrValidation.message,
+        }),
+      };
+    }
+
+    const { session, qrData: parsedQrData } = qrValidation;
+
+    // Step 2: Validate roll number against class range
+    const classResult = await dynamodb.send(
+      new GetCommand({
+        TableName: "Classes",
+        Key: { classId: parsedQrData.classId },
+      })
+    );
+
+    if (!classResult.Item) {
+      return {
+        statusCode: 404,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({
+          success: false,
+          message: "Class not found",
+        }),
+      };
+    }
+
+    // Validate roll number against class roll range
+    const rollRange =
+      classResult.Item.rollNumberRange || parsedQrData.rollRange;
+    if (rollRange && !validateRollInRange(rollNumber, rollRange)) {
+      return {
+        statusCode: 400,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({
+          success: false,
+          message: `Roll number ${rollNumber} is not valid for this class. Expected range: ${rollRange}`,
+        }),
+      };
+    }
+
+    // Step 3: Check if already marked attendance for this session with this roll number
+    const existingAttendance = await dynamodb.send(
+      new ScanCommand({
+        TableName: "Attendance",
+        FilterExpression: "sessionId = :sessionId AND rollNumber = :rollNumber",
+        ExpressionAttributeValues: {
+          ":sessionId": session.sessionId,
+          ":rollNumber": rollNumber,
+        },
+      })
+    );
+
+    if (existingAttendance.Items && existingAttendance.Items.length > 0) {
+      return {
+        statusCode: 409,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({
+          success: false,
+          message: "Attendance already marked for this session",
+        }),
+      };
+    }
+
+    // Step 4: Verify face (simplified for local development)
+    const faceVerification = await verifyFaceLocal(faceImageBase64, rollNumber);
+    if (!faceVerification.verified) {
+      return {
+        statusCode: 400,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({
+          success: false,
+          message: faceVerification.message,
+        }),
+      };
+    }
+
+    // Step 5: Mark attendance (create virtual student record)
+    const attendanceId = uuidv4();
+    const attendanceData = {
+      attendanceId,
+      sessionId: session.sessionId,
+      classId: session.classId,
+      rollNumber: rollNumber,
+      studentName: `Student ${rollNumber}`, // Virtual name
+      teacherId: session.teacherId,
+      sessionName: session.sessionName,
+      markedAt: new Date().toISOString(),
+      faceConfidence: faceVerification.confidence,
+      attendanceMethod: "QR_FACE_RECOGNITION_LOCAL",
+      isPresent: true,
+      localMode: true,
+    };
+
+    await dynamodb.send(
+      new PutCommand({
+        TableName: "Attendance",
+        Item: attendanceData,
+      })
+    );
+
+    // Step 6: Update session attendance count
+    await dynamodb.send(
+      new UpdateCommand({
+        TableName: "Sessions",
+        Key: { sessionId: session.sessionId },
+        UpdateExpression: "SET attendanceCount = attendanceCount + :inc",
+        ExpressionAttributeValues: {
+          ":inc": 1,
+        },
+      })
+    );
+
+    return {
+      statusCode: 201,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({
+        success: true,
+        message: "Attendance marked successfully (local development mode)",
+        data: {
+          attendanceId,
+          studentName: `Student ${rollNumber}`,
+          rollNumber: rollNumber,
+          sessionName: session.sessionName,
+          markedAt: attendanceData.markedAt,
+          faceConfidence: faceVerification.confidence,
+          mode: "local_development",
+        },
+      }),
+    };
+  } catch (error) {
+    console.error("Mark attendance error:", error);
+    return {
+      statusCode: 500,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      }),
+    };
+  }
+};
+
+// Helper function to validate roll number against range
+const validateRollInRange = (rollNumber, rollRange) => {
+  try {
+    if (!rollRange || !rollRange.includes("-")) {
+      return true; // If no range specified, allow all
+    }
+
+    const [rangeStart, rangeEnd] = rollRange.split("-");
+
+    // For numeric ranges like "2024178001-2024178060"
+    if (/^\d+$/.test(rangeStart) && /^\d+$/.test(rangeEnd)) {
+      const rollNum = parseInt(rollNumber);
+      const startNum = parseInt(rangeStart);
+      const endNum = parseInt(rangeEnd);
+
+      if (isNaN(rollNum) || isNaN(startNum) || isNaN(endNum)) {
+        return false;
+      }
+
+      return rollNum >= startNum && rollNum <= endNum;
+    }
+
+    // For alphanumeric ranges like "21CS001-21CS060"
+    else {
+      // Extract numeric part for comparison
+      const rollNumStr = rollNumber.toString();
+      return rollNumStr >= rangeStart && rollNumStr <= rangeEnd;
+    }
+  } catch (error) {
+    console.error("Roll validation error:", error);
+    return false;
+  }
+};
+
+// Mark attendance for a student (simplified for local development)
 module.exports.markAttendance = async (event) => {
   try {
     const { qrData, rollNumber, faceImageBase64 } = JSON.parse(event.body);
