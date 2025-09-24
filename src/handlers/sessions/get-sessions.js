@@ -4,7 +4,7 @@ const { dynamodb } = require("../../utils/aws/clients");
 const { verifyToken } = require("../../utils/helpers/jwt-helper");
 const { apiResponse } = require("../../utils/helpers/api-response");
 
-module.exports.getSessionsByClass = async (event) => {
+exports.handler = async (event) => {
   try {
     // Verify authentication
     const token = event.headers.Authorization || event.headers.authorization;
@@ -38,9 +38,20 @@ module.exports.getSessionsByClass = async (event) => {
       })
     );
 
-    return apiResponse(200, true, "Sessions retrieved successfully", result.Items || []);
+    return apiResponse(
+      200,
+      true,
+      "Sessions retrieved successfully",
+      result.Items || []
+    );
   } catch (error) {
     console.error("Get sessions error:", error);
-    return apiResponse(500, false, "Internal server error", null, error.message);
+    return apiResponse(
+      500,
+      false,
+      "Internal server error",
+      null,
+      error.message
+    );
   }
 };

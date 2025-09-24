@@ -19,6 +19,40 @@ const calculateExpectedStudents = (rollRange) => {
   }
 };
 
+// Parse roll number range (example: "21CS001-21CS060")
+const parseRollRange = (rollRange) => {
+  try {
+    const [start, end] = rollRange.split("-");
+    const startNum = parseInt(start.slice(-3));
+    const endNum = parseInt(end.slice(-3));
+    return {
+      prefix: start.slice(0, -3),
+      startNum,
+      endNum,
+      count: endNum - startNum + 1,
+    };
+  } catch (error) {
+    return null;
+  }
+};
+
+// Check if roll number is within range
+const isRollInRange = (rollNumber, rollRange) => {
+  const range = parseRollRange(rollRange);
+  if (!range) return false;
+
+  const rollNum = parseInt(rollNumber.slice(-3));
+  const rollPrefix = rollNumber.slice(0, -3);
+
+  return (
+    rollPrefix === range.prefix &&
+    rollNum >= range.startNum &&
+    rollNum <= range.endNum
+  );
+};
+
 module.exports = {
   calculateExpectedStudents,
+  parseRollRange,
+  isRollInRange,
 };

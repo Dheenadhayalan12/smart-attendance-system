@@ -3,7 +3,7 @@ const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
 const { dynamodb } = require("../../utils/aws/clients");
 const { apiResponse } = require("../../utils/helpers/api-response");
 
-module.exports.getStudentsByClass = async (event) => {
+exports.handler = async (event) => {
   try {
     const classId = event.pathParameters.classId;
 

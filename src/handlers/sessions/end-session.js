@@ -4,7 +4,7 @@ const { dynamodb } = require("../../utils/aws/clients");
 const { verifyToken } = require("../../utils/helpers/jwt-helper");
 const { apiResponse } = require("../../utils/helpers/api-response");
 
-module.exports.endSession = async (event) => {
+exports.handler = async (event) => {
   try {
     // Verify authentication
     const token = event.headers.Authorization || event.headers.authorization;

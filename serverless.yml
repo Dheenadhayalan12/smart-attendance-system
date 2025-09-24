@@ -39,6 +39,7 @@ provider:
 
 plugins:
   - serverless-localstack
+  - serverless-offline
 
 custom:
   localstack:
@@ -51,16 +52,11 @@ custom:
       mountCode: true
     docker:
       sudo: false
-  # Environment-specific handlers
-  studentAttendanceHandler: ${self:custom.studentAttendanceHandlers.${opt:stage, self:provider.stage}, self:custom.studentAttendanceHandlers.default}
-  studentAttendanceHandlers:
-    local: -local
-    default: ""
 
 functions:
   # Authentication functions
   teacherRegister:
-    handler: backend/handlers/auth.register
+    handler: src/handlers/auth/register.handler
     events:
       - http:
           path: auth/register
@@ -68,7 +64,7 @@ functions:
           cors: true
 
   teacherLogin:
-    handler: backend/handlers/auth.login
+    handler: src/handlers/auth/login.handler
     events:
       - http:
           path: auth/login
@@ -76,7 +72,7 @@ functions:
           cors: true
 
   verifyEmail:
-    handler: backend/handlers/auth.verifyEmail
+    handler: src/handlers/auth/verify-email.handler
     events:
       - http:
           path: auth/verify-email
@@ -84,7 +80,7 @@ functions:
           cors: true
 
   resendVerification:
-    handler: backend/handlers/auth.resendVerification
+    handler: src/handlers/auth/resend-verification.handler
     events:
       - http:
           path: auth/resend-verification
@@ -93,7 +89,7 @@ functions:
 
   # Class Management functions
   createClass:
-    handler: backend/handlers/classes.createClass
+    handler: src/handlers/classes/create-class.handler
     events:
       - http:
           path: classes
@@ -101,7 +97,7 @@ functions:
           cors: true
 
   getClasses:
-    handler: backend/handlers/classes.getClasses
+    handler: src/handlers/classes/get-classes.handler
     events:
       - http:
           path: classes
@@ -109,7 +105,7 @@ functions:
           cors: true
 
   getClass:
-    handler: backend/handlers/classes.getClass
+    handler: src/handlers/classes/get-class.handler
     events:
       - http:
           path: classes/{classId}
@@ -117,7 +113,7 @@ functions:
           cors: true
 
   updateClass:
-    handler: backend/handlers/classes.updateClass
+    handler: src/handlers/classes/update-class.handler
     events:
       - http:
           path: classes/{classId}
@@ -125,7 +121,7 @@ functions:
           cors: true
 
   deleteClass:
-    handler: backend/handlers/classes.deleteClass
+    handler: src/handlers/classes/delete-class.handler
     events:
       - http:
           path: classes/{classId}
@@ -134,7 +130,7 @@ functions:
 
   # Session Management functions
   createSession:
-    handler: backend/handlers/sessions.createSession
+    handler: src/handlers/sessions/create-session.handler
     events:
       - http:
           path: sessions
@@ -142,7 +138,7 @@ functions:
           cors: true
 
   getSessionsByClass:
-    handler: backend/handlers/sessions.getSessionsByClass
+    handler: src/handlers/sessions/get-sessions.handler
     events:
       - http:
           path: classes/{classId}/sessions
@@ -150,7 +146,7 @@ functions:
           cors: true
 
   getSession:
-    handler: backend/handlers/sessions.getSession
+    handler: src/handlers/sessions/get-session.handler
     events:
       - http:
           path: sessions/{sessionId}
@@ -158,7 +154,7 @@ functions:
           cors: true
 
   endSession:
-    handler: backend/handlers/sessions.endSession
+    handler: src/handlers/sessions/end-session.handler
     events:
       - http:
           path: sessions/{sessionId}/end
@@ -169,7 +165,7 @@ functions:
   # NOTE: Student registration removed - students auto-register via QR attendance
 
   getStudentsByClass:
-    handler: backend/handlers/students.getStudentsByClass
+    handler: src/handlers/students/get-students.handler
     events:
       - http:
           path: classes/{classId}/students
@@ -177,7 +173,7 @@ functions:
           cors: true
 
   getStudent:
-    handler: backend/handlers/students.getStudent
+    handler: src/handlers/students/get-student.handler
     events:
       - http:
           path: students/{studentId}
@@ -188,7 +184,7 @@ functions:
   # NOTE: Manual attendance marking removed - all attendance via QR codes now
 
   getSessionAttendance:
-    handler: backend/handlers/attendance.getSessionAttendance
+    handler: src/handlers/attendance/get-session-attendance.handler
     events:
       - http:
           path: sessions/{sessionId}/attendance
@@ -196,7 +192,7 @@ functions:
           cors: true
 
   getStudentAttendance:
-    handler: backend/handlers/attendance.getStudentAttendance
+    handler: src/handlers/attendance/get-student-attendance.handler
     events:
       - http:
           path: students/{studentId}/attendance
@@ -205,7 +201,7 @@ functions:
 
   # Student-facing public endpoints (no authentication required)
   getSessionInfo:
-    handler: backend/handlers/student-attendance${self:custom.studentAttendanceHandler}.getSessionInfo
+    handler: src/handlers/attendance/get-session-info.handler
     events:
       - http:
           path: api/student/session/{sessionId}
@@ -213,7 +209,7 @@ functions:
           cors: true
 
   submitStudentAttendance:
-    handler: backend/handlers/student-attendance${self:custom.studentAttendanceHandler}.submitAttendance
+    handler: src/handlers/attendance/submit-attendance.handler
     events:
       - http:
           path: api/student/attendance

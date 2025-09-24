@@ -8,13 +8,13 @@ const { apiResponse } = require("../../utils/helpers/api-response");
 const {
   validateEmail,
   generateVerificationToken,
-} = require("../../utils/email-validation");
+} = require("../../utils/validation/email-validation");
 const {
   sendVerificationEmail,
   isProduction,
-} = require("../../utils/email-service");
+} = require("../../utils/services/email-service");
 
-module.exports.register = async (event) => {
+exports.handler = async (event) => {
   try {
     const { name, email, password, phone, department } = JSON.parse(event.body);
 

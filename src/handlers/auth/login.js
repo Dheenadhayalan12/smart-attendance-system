@@ -4,9 +4,9 @@ const bcrypt = require("bcryptjs");
 const { dynamodb } = require("../../utils/aws/clients");
 const { generateToken } = require("../../utils/helpers/jwt-helper");
 const { apiResponse } = require("../../utils/helpers/api-response");
-const { isProduction } = require("../../utils/email-service");
+const { isProduction } = require("../../utils/services/email-service");
 
-module.exports.login = async (event) => {
+exports.handler = async (event) => {
   try {
     const { email, password } = JSON.parse(event.body);
 

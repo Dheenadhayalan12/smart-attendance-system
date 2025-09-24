@@ -1,10 +1,9 @@
 const { ScanCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
-
-const { dynamodb } = require("../../utils/aws/clients");
+const { ddbDocClient } = require("../../utils/aws/clients");
 const { generateToken } = require("../../utils/helpers/jwt-helper");
 const { apiResponse } = require("../../utils/helpers/api-response");
 
-module.exports.verifyEmail = async (event) => {
+exports.handler = async (event) => {
   try {
     const { token } = JSON.parse(event.body);
 
@@ -13,7 +12,7 @@ module.exports.verifyEmail = async (event) => {
     }
 
     // Find teacher by verification token
-    const result = await dynamodb.send(
+    const result = await ddbDocClient.send(
       new ScanCommand({
         TableName: "Teachers",
         FilterExpression: "verificationToken = :token",
@@ -42,7 +41,7 @@ module.exports.verifyEmail = async (event) => {
     }
 
     // Activate teacher account
-    await dynamodb.send(
+    await ddbDocClient.send(
       new PutCommand({
         TableName: "Teachers",
         Item: {

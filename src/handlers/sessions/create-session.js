@@ -13,7 +13,7 @@ const {
   calculateExpectedStudents,
 } = require("../../utils/helpers/session-helpers");
 
-module.exports.createSession = async (event) => {
+exports.handler = async (event) => {
   try {
     // Verify authentication
     const token = event.headers.Authorization || event.headers.authorization;

@@ -14,7 +14,7 @@ const {
   markAttendance,
 } = require("../../utils/services/attendance-service");
 
-module.exports.submitAttendance = async (event) => {
+exports.handler = async (event) => {
   try {
     const { sessionId, rollNumber, faceImage, studentName } = JSON.parse(
       event.body

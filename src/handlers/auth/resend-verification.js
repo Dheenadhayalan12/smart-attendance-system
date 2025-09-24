@@ -2,10 +2,12 @@ const { ScanCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
 
 const { dynamodb } = require("../../utils/aws/clients");
 const { apiResponse } = require("../../utils/helpers/api-response");
-const { generateVerificationToken } = require("../../utils/email-validation");
-const { sendVerificationEmail } = require("../../utils/email-service");
+const {
+  generateVerificationToken,
+} = require("../../utils/validation/email-validation");
+const { sendVerificationEmail } = require("../../utils/services/email-service");
 
-module.exports.resendVerification = async (event) => {
+exports.handler = async (event) => {
   try {
     const { email } = JSON.parse(event.body);
 

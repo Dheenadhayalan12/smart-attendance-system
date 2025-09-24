@@ -3,7 +3,7 @@ const { GetCommand } = require("@aws-sdk/lib-dynamodb");
 const { dynamodb } = require("../../utils/aws/clients");
 const { apiResponse } = require("../../utils/helpers/api-response");
 
-module.exports.getStudent = async (event) => {
+exports.handler = async (event) => {
   try {
     const studentId = event.pathParameters.studentId;
 
