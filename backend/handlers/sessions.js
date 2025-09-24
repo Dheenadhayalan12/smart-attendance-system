@@ -96,7 +96,11 @@ module.exports.createSession = async (event) => {
     const startTime = new Date();
     const endTime = new Date(startTime.getTime() + duration * 60 * 1000); // duration in minutes
 
-    // Create session data for QR code
+    // Create attendance URL for QR code (students will scan this)
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const attendanceUrl = `${frontendUrl}/attendance?sessionId=${sessionId}`;
+
+    // Store session metadata (for backend validation)
     const qrData = {
       sessionId,
       classId,
@@ -106,8 +110,8 @@ module.exports.createSession = async (event) => {
       validUntil: endTime.toISOString(),
     };
 
-    // Generate QR code
-    const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), {
+    // Generate QR code with web URL (not JSON data)
+    const qrCodeDataURL = await QRCode.toDataURL(attendanceUrl, {
       width: 300,
       margin: 2,
       color: {
@@ -127,6 +131,7 @@ module.exports.createSession = async (event) => {
       duration, // in minutes
       qrCode: qrCodeDataURL,
       qrData: JSON.stringify(qrData),
+      attendanceUrl: attendanceUrl,
       isActive: true,
       createdAt: new Date().toISOString(),
       attendanceCount: 0,
@@ -180,10 +185,19 @@ module.exports.createSession = async (event) => {
 // Helper function to calculate expected students from roll range
 module.exports.calculateExpectedStudents = (rollRange) => {
   try {
-    // Example: "21CS001-21CS060" -> 60 students
+    if (!rollRange || !rollRange.includes("-")) {
+      return 0;
+    }
+
+    // Example: "2024179001-2024179060" -> 60 students
     const [start, end] = rollRange.split("-");
-    const startNum = parseInt(start.slice(-3)); // Get last 3 digits
-    const endNum = parseInt(end.slice(-3));
+    const startNum = parseInt(start); // Parse full 10-digit number
+    const endNum = parseInt(end); // Parse full 10-digit number
+
+    if (isNaN(startNum) || isNaN(endNum)) {
+      return 0;
+    }
+
     return endNum - startNum + 1;
   } catch (error) {
     return 0;

@@ -26,7 +26,11 @@ const s3Client = new S3Client({
 const dynamodb = DynamoDBDocumentClient.from(dynamoClient);
 const S3_BUCKET = "smart-attendance-faces";
 
-// Simplified student registration (stores face image but no Rekognition)
+// NOTE: Teacher-based student registration removed
+// Students now self-register automatically when they first scan QR code for attendance
+// See student-attendance-local.js for the new auto-registration flow
+
+/* REMOVED - Teacher student registration function
 module.exports.registerStudent = async (event) => {
   try {
     const {
@@ -176,7 +180,7 @@ module.exports.registerStudent = async (event) => {
       }),
     };
   }
-};
+}; */
 
 // Get all students for a class
 module.exports.getStudentsByClass = async (event) => {

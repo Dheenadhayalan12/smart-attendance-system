@@ -69,7 +69,7 @@ module.exports.createClass = async (event) => {
       teacherName: decoded.name,
       subject,
       description: description || null,
-      rollNumberRange, // e.g., "21CS001-21CS060"
+      rollNumberRange, // e.g., "2024179001-2024179060"
       department: department || null,
       createdAt: new Date().toISOString(),
       isActive: true,

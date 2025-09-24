@@ -71,7 +71,10 @@ const verifyFaceLocal = async (faceImageBase64, expectedStudentId) => {
   };
 };
 
-// Mark attendance for a student (simplified for local development)
+// NOTE: Manual attendance marking removed - all attendance via QR codes now
+// See student-attendance-local.js for the new QR-based attendance flow
+
+/* REMOVED - Manual attendance marking function
 module.exports.markAttendance = async (event) => {
   try {
     const { qrData, rollNumber, faceImageBase64 } = JSON.parse(event.body);
@@ -246,7 +249,7 @@ module.exports.markAttendance = async (event) => {
       }),
     };
   }
-};
+}; */
 
 // Get attendance for a session
 module.exports.getSessionAttendance = async (event) => {

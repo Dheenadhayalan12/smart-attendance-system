@@ -7,6 +7,9 @@ provider:
   environment:
     DYNAMODB_TABLE_PREFIX: ${self:service}-${opt:stage, self:provider.stage}
     S3_BUCKET: ${self:service}-${opt:stage, self:provider.stage}-storage
+    FRONTEND_URL: ${env:FRONTEND_URL, 'http://localhost:3000'}
+    FROM_EMAIL: ${env:FROM_EMAIL, 'noreply@smartattendance.edu'}
+    NODE_ENV: ${opt:stage, 'development'}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -27,6 +30,12 @@ provider:
       Action:
         - rekognition:*
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+        - ses:VerifyEmailIdentity
+      Resource: "*"
 
 plugins:
   - serverless-localstack
@@ -42,6 +51,11 @@ custom:
       mountCode: true
     docker:
       sudo: false
+  # Environment-specific handlers
+  studentAttendanceHandler: ${self:custom.studentAttendanceHandlers.${opt:stage, self:provider.stage}, self:custom.studentAttendanceHandlers.default}
+  studentAttendanceHandlers:
+    local: -local
+    default: ""
 
 functions:
   # Authentication functions
@@ -58,6 +72,22 @@ functions:
     events:
       - http:
           path: auth/login
+          method: post
+          cors: true
+
+  verifyEmail:
+    handler: backend/handlers/auth.verifyEmail
+    events:
+      - http:
+          path: auth/verify-email
+          method: post
+          cors: true
+
+  resendVerification:
+    handler: backend/handlers/auth.resendVerification
+    events:
+      - http:
+          path: auth/resend-verification
           method: post
           cors: true
 
@@ -135,14 +165,8 @@ functions:
           method: post
           cors: true
 
-  # Student Management functions
-  registerStudent:
-    handler: backend/handlers/students.registerStudent
-    events:
-      - http:
-          path: students/register
-          method: post
-          cors: true
+  # Student Management functions (teacher dashboard only)
+  # NOTE: Student registration removed - students auto-register via QR attendance
 
   getStudentsByClass:
     handler: backend/handlers/students.getStudentsByClass
@@ -160,14 +184,8 @@ functions:
           method: get
           cors: true
 
-  # Attendance functions
-  markAttendance:
-    handler: backend/handlers/attendance.markAttendance
-    events:
-      - http:
-          path: attendance/mark
-          method: post
-          cors: true
+  # Attendance functions (teacher dashboard - viewing only)
+  # NOTE: Manual attendance marking removed - all attendance via QR codes now
 
   getSessionAttendance:
     handler: backend/handlers/attendance.getSessionAttendance
@@ -183,6 +201,23 @@ functions:
       - http:
           path: students/{studentId}/attendance
           method: get
+          cors: true
+
+  # Student-facing public endpoints (no authentication required)
+  getSessionInfo:
+    handler: backend/handlers/student-attendance${self:custom.studentAttendanceHandler}.getSessionInfo
+    events:
+      - http:
+          path: api/student/session/{sessionId}
+          method: get
+          cors: true
+
+  submitStudentAttendance:
+    handler: backend/handlers/student-attendance${self:custom.studentAttendanceHandler}.submitAttendance
+    events:
+      - http:
+          path: api/student/attendance
+          method: post
           cors: true
 
 resources:
