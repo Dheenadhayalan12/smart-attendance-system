@@ -56,6 +56,7 @@ const getExistingStudent = async (rollNumber, classId) => {
 const registerNewStudent = async (
   rollNumber,
   classId,
+  teacherId,
   faceImage,
   studentName
 ) => {
@@ -63,8 +64,8 @@ const registerNewStudent = async (
     const studentId = uuidv4();
     const imageBuffer = Buffer.from(faceImage, "base64");
 
-    // Upload face image to S3
-    const faceImageKey = `faces/${studentId}.jpg`;
+    // Upload face image to S3 with teacher/class structure
+    const faceImageKey = `teacher-${teacherId}/class-${classId}/student-${rollNumber}.jpg`;
     await uploadToS3(faceImageKey, imageBuffer);
 
     let faceId = null;

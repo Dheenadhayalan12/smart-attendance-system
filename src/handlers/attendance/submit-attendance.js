@@ -114,6 +114,7 @@ exports.handler = async (event) => {
         const registrationResult = await registerNewStudent(
           rollNumber,
           session.classId,
+          session.teacherId,
           faceImage,
           studentName
         );
