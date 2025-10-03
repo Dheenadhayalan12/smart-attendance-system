@@ -226,11 +226,6 @@ npm run deploy:prod         # Deploy to AWS production
 npm run offline             # Start serverless offline
 ```
 
-## 📝 Roll Number Format
-
-The system validates roll numbers in the format: `21CS001` (2-digit year + 2-letter department + 3-digit number)
-
-Example class range: `21CS001-21CS060` (60 students)
 
 ## 🔧 AWS Services Used
 

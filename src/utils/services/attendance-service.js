@@ -67,16 +67,21 @@ const registerNewStudent = async (
     const faceImageKey = `faces/${studentId}.jpg`;
     await uploadToS3(faceImageKey, imageBuffer);
 
-    // Index face in Rekognition
-    const indexResult = await indexFace(imageBuffer, studentId);
+    let faceId = null;
+    
+    // Skip Rekognition for LocalStack
+    if (process.env.NODE_ENV !== "local") {
+      // Index face in Rekognition (only for real AWS)
+      const indexResult = await indexFace(imageBuffer, studentId);
 
-    if (!indexResult.FaceRecords || indexResult.FaceRecords.length === 0) {
-      throw new Error(
-        "Unable to detect face in the image. Please ensure your face is clearly visible."
-      );
+      if (!indexResult.FaceRecords || indexResult.FaceRecords.length === 0) {
+        throw new Error(
+          "Unable to detect face in the image. Please ensure your face is clearly visible."
+        );
+      }
+
+      faceId = indexResult.FaceRecords[0].Face.FaceId;
     }
-
-    const faceId = indexResult.FaceRecords[0].Face.FaceId;
 
     // Create student record
     const studentData = {
@@ -88,6 +93,7 @@ const registerNewStudent = async (
       rekognitionFaceId: faceId,
       registeredAt: new Date().toISOString(),
       attendanceCount: 0,
+      totalSessions: 0,
       isActive: true,
     };
 
@@ -108,9 +114,18 @@ const registerNewStudent = async (
 // Verify student face against stored face data
 const verifyStudentFace = async (faceImage, studentId) => {
   try {
+    // Skip face verification for LocalStack
+    if (process.env.NODE_ENV === "local") {
+      return {
+        verified: true,
+        confidence: "100.00",
+        message: "Face verification skipped in LocalStack",
+      };
+    }
+
     const imageBuffer = Buffer.from(faceImage, "base64");
 
-    // Search for face in collection
+    // Search for face in collection (only for real AWS)
     const searchResult = await searchFace(imageBuffer);
 
     if (!searchResult.FaceMatches || searchResult.FaceMatches.length === 0) {
@@ -168,14 +183,15 @@ const markAttendance = async (sessionId, student, verificationResult) => {
     })
   );
 
-  // Update student attendance count
+  // Update student attendance count and total sessions
   await dynamodb.send(
     new UpdateCommand({
       TableName: "Students",
       Key: { studentId: student.studentId },
-      UpdateExpression: "SET attendanceCount = attendanceCount + :inc",
+      UpdateExpression: "SET attendanceCount = attendanceCount + :inc, totalSessions = if_not_exists(totalSessions, :zero) + :inc",
       ExpressionAttributeValues: {
         ":inc": 1,
+        ":zero": 0,
       },
     })
   );

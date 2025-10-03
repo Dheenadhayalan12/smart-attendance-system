@@ -16,12 +16,16 @@ const {
 
 exports.handler = async (event) => {
   try {
+    console.log('Received event body:', event.body);
     const { sessionId, rollNumber, faceImage, studentName } = JSON.parse(
       event.body
     );
+    
+    console.log('Parsed data:', { sessionId, rollNumber, hasImage: !!faceImage, studentName });
 
     // Validate required fields
     if (!sessionId || !rollNumber || !faceImage) {
+      console.log('Validation failed:', { sessionId: !!sessionId, rollNumber: !!rollNumber, faceImage: !!faceImage });
       return apiResponse(
         400,
         false,

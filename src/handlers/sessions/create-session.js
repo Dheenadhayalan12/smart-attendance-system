@@ -56,7 +56,7 @@ exports.handler = async (event) => {
     const endTime = new Date(startTime.getTime() + duration * 60 * 1000); // duration in minutes
 
     // Create attendance URL for QR code (students will scan this)
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const attendanceUrl = `${frontendUrl}/attendance?sessionId=${sessionId}`;
 
     // Store session metadata (for backend validation)
